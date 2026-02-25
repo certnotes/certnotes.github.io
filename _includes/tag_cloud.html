@@ -1,0 +1,94 @@
+<style>
+.tag-cloud { line-height: 2.2; margin: 0.75rem 0 1rem; }
+.tag-cloud .tag {
+  display: inline-block;
+  margin: 0 .35rem .35rem 0;
+  padding: .15rem .45rem;
+  border-radius: .6rem;
+  border: 1px solid rgba(0,0,0,.14);
+  text-decoration: none;
+}
+.tag-cloud .tag:hover { text-decoration: underline; }
+
+/* Dark theme border */
+@media (prefers-color-scheme: dark) {
+  .tag-cloud .tag {
+    border-color: rgba(255,255,255,.18);
+  }
+}
+</style>
+
+
+{%- comment -%}
+Tag cloud sized by frequency (posts per tag).
+
+Tweaks included:
+- Hide rare tags: min_count (default 2)
+- Limit to top N tags: max_tags (default 30)
+
+Sorting approach:
+- Build sortable strings like "00012::tagname"
+- Sort strings (works reliably), then reverse for descending
+{%- endcomment -%}
+
+{%- assign min_count = 1 -%}
+{%- assign max_tags  = 30 -%}
+
+{%- assign max = 1 -%}
+{%- assign min = 999999 -%}
+
+{%- comment -%}Compute min/max counts across tags that meet min_count{%- endcomment -%}
+{%- for t in site.tags -%}
+  {%- assign c = t[1].size -%}
+  {%- if c >= min_count -%}
+    {%- if c > max -%}{%- assign max = c -%}{%- endif -%}
+    {%- if c < min -%}{%- assign min = c -%}{%- endif -%}
+  {%- endif -%}
+{%- endfor -%}
+
+{%- assign range = max | minus: min -%}
+
+{%- comment -%}
+Build a sortable list of "paddedcount::tagname"
+(pad width 5 is plenty unless you have >99999 posts per tag)
+{%- endcomment -%}
+{%- capture tag_str -%}{%- endcapture -%}
+{%- for t in site.tags -%}
+  {%- assign name  = t[0] -%}
+  {%- assign count = t[1].size -%}
+  {%- if count >= min_count -%}
+    {%- assign padded = count | plus: 0 | prepend: "00000" | slice: -5, 5 -%}
+    {%- capture tag_str -%}{{ tag_str }}{{ padded }}::{{ name }}||{%- endcapture -%}
+  {%- endif -%}
+{%- endfor -%}
+
+{%- assign tag_arr = tag_str | split: "||" | sort -%}
+
+<div class="tag-cloud" aria-label="Tag cloud">
+  {%- assign shown = 0 -%}
+  {%- for item in tag_arr reversed -%}
+    {%- if item == "" -%}{%- continue -%}{%- endif -%}
+
+    {%- assign parts = item | split: "::" -%}
+    {%- assign count = parts[0] | plus: 0 -%}
+    {%- assign name  = parts[1] -%}
+
+    {%- if range == 0 -%}
+      {%- assign size = 120 -%}
+    {%- else -%}
+      {%- comment -%}Map count -> font-size% roughly [90..170]{%- endcomment -%}
+      {%- assign size = count | minus: min | times: 80 | divided_by: range | plus: 90 -%}
+    {%- endif -%}
+
+    <a
+      class="tag"
+      href="/tags/#{{ name | slugify }}"
+      style="font-size: {{ size }}%;"
+      aria-label="Tag {{ name }} ({{ count }} posts)"
+      title="{{ count }} posts"
+    >{{ name }}</a>
+
+    {%- assign shown = shown | plus: 1 -%}
+    {%- if shown >= max_tags -%}{%- break -%}{%- endif -%}
+  {%- endfor -%}
+</div>

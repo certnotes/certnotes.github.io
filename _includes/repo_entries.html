@@ -1,0 +1,64 @@
+{%- assign pinned_only = include.pinned_only | default: false -%}
+{%- assign pinned_names = site.pinned_repos | default: site.data.pinned_repos | default: empty -%}
+
+{%- assign repos = site.github.public_repositories
+  | where_exp: "r", "r.fork != true and r.archived != true and r.disabled != true and r.name != site.github.repository_name"
+-%}
+
+{%- if pinned_only == true or pinned_only == "true" -%}
+  {%- assign repos = repos | where_exp: "r", "pinned_names contains r.name" -%}
+{%- endif -%}
+
+{%- assign repos = repos | sort: "pushed_at" | reverse -%}
+{%- assign variant = include.variant | default: "compact" -%}
+{%- assign limit = include.limit | default: 3 -%}
+
+{%- if variant == "cards" -%}
+  <ul class="repo-list">
+    {%- for repo in repos limit: limit -%}
+      {%- assign owner = repo.owner.login -%}
+      {%- assign branch = repo.default_branch | default: "main" -%}
+
+      <li class="repo-card">
+        <h3 class="repo-title">
+          <a class="repo-link" href="{{ repo.html_url }}">{{ repo.name }}</a>
+        </h3>
+
+        {%- if repo.description and repo.description != "" -%}
+          <p class="repo-desc">{{ repo.description }}</p>
+        {%- endif -%}
+
+        <ul class="repo-meta" aria-label="Repository metadata">
+          <li>
+            <span aria-hidden="true">{%- octicon calendar -%}</span>
+            <time datetime="{{ repo.pushed_at | date_to_xmlschema }}">
+              {{ repo.pushed_at | date: "%Y-%m-%d" }}
+            </time>
+          </li>
+
+          {%- if repo.license and repo.license.spdx_id -%}
+            <li>
+              <span aria-hidden="true">{% octicon law %}</span>
+              {{ repo.license.spdx_id }}
+            </li>
+          {%- endif -%}
+
+          <li>
+            <span aria-hidden="true">{% octicon file-zip %}</span>
+            <a class="repo-download" href="https://github.com/{{ owner }}/{{ repo.name }}/archive/refs/heads/{{ branch }}.zip" rel="nofollow">Download <small>(.zip)</small></a>
+          </li>
+        </ul>
+      </li>
+    {%- endfor -%}
+  </ul>
+{%- else -%}
+  <ul class="post-list" style="list-style-type: disc;">
+    {%- for repo in repos limit: limit -%}
+      <li style="margin:0; padding:0;">
+        <a href="{{ repo.html_url }}">{{ repo.name }}</a>
+        {%- if repo.description and repo.description != "" -%}
+        : <small>{{ repo.description }}</small>{%- endif -%}
+      </li>
+    {%- endfor -%}
+  </ul>
+{%- endif -%}

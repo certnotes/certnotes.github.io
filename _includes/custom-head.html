@@ -1,0 +1,11 @@
+{%- if page.preload_images and page.preload_images.size > 0 -%}
+  {%- for img in page.preload_images -%}
+    {%- assign img_trim = img | strip -%}
+    {%- if img_trim != "" -%}
+      <link rel="preload" as="image" href="{{ img_trim | relative_url }}">
+    {%- endif -%}
+  {%- endfor -%}
+{%- endif -%}
+
+<!-- Do not remove, removal will cause hamburger icon in top right corner of mobile view to disappear. Compensates for bug in remote theme. -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css" referrerpolicy="no-referrer">

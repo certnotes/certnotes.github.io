@@ -1,0 +1,63 @@
+---
+layout: home
+---
+
+<header class="post-header"><h1 class="post-title">Home</h1></header>
+
+<div class="mqwrap" style="
+  width:100%;
+  overflow:hidden;
+  white-space:nowrap;
+  container-type:inline-size;
+  contain: content;
+">
+  <div class="mqtrack" style="
+    display:flex;
+    width:200cqw;
+    will-change:transform;
+    transform:translate3d(0,0,0);
+    animation: mq-wrap 8s linear 1 forwards;
+  ">
+    <div style="flex:0 0 100cqw; display:flex; justify-content:center;">
+      <span style="display:inline-block;">Course notes, projects, and essays (when was the last time you saw a &lt;marquee&gt;)</span>
+    </div>
+    <div style="flex:0 0 100cqw; display:flex; justify-content:center;" aria-hidden="true">
+      <span style="display:inline-block;">Course notes, projects, and essays (when was the last time you saw a &lt;marquee&gt;)</span>
+    </div>
+  </div>
+</div>
+
+<style>
+  @keyframes mq-wrap{
+    from { transform: translate3d(0,0,0); }
+    to   { transform: translate3d(-100cqw,0,0); }
+  }
+
+  /* Pause on hover */
+  .mqwrap:hover .mqtrack{
+    animation-play-state: paused;
+  }
+
+  /* Reduce motion support */
+  @media (prefers-reduced-motion: reduce){
+    .mqtrack{
+      animation: none !important;
+      transform: none !important;
+    }
+  }
+</style>
+
+<!--
+<p style="text-align: center;">Course notes, projects, and essays.</p>
+-->
+
+{%- if paginator == nil or paginator.page == 1 -%}
+{%- include repo_list.html -%}
+<hr style="margin-left:auto; margin-right:auto; width:50%; border:0; border-top:2px solid currentColor; opacity:0.25;">
+{%- assign recent_data = site.data.recent_commits -%}
+{%- if recent_data and recent_data.items and recent_data.items.size > 0 -%}
+{%- include recent_commits.html -%}
+<hr style="margin-left:auto; margin-right:auto; width:50%; border:0; border-top:2px solid currentColor; opacity:0.25;">
+{%- endif -%}
+{%- endif -%}
+<h2>Posts</h2>

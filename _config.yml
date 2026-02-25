@@ -1,0 +1,35 @@
+title: AIs Through the Looking Glass
+description: Artificial intelligence in more ways than one. A blog and portfolio site focusing on the intersection of technology, social sciences, and humanities.
+permalink: /posts/:title/
+future: false
+timezone: Asia/Seoul
+markdown: kramdown
+
+plugins:
+  - jekyll-remote-theme
+  - jekyll-feed
+  - jekyll-sitemap
+  - jekyll-seo-tag
+  - jekyll-octicons
+  - jekyll-paginate
+
+remote_theme: jekyll/minima
+
+minima:
+  skin: auto
+  show_excerpts: true
+  nav_pages:
+    - posts.md
+    - about.md
+
+feed:
+  excerpt_only: true
+  
+paginate: 5
+paginate_path: "/page/:num/"
+
+pinned_repos:
+  - data-AI-eng
+  - linux-cyber
+  - BA-PO-econ
+  - open-banking-lakehouse
