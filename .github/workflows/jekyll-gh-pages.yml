@@ -5,6 +5,8 @@ on:
   # Runs on pushes targeting the default branch
   push:
     branches: ["main"]
+    paths-ignore:
+      - '**/README.md'
 
   # Runs every day at midnight UTC
   schedule:
