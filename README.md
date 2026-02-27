@@ -1,17 +1,17 @@
 # AIs Through the Looking Glass
 
-[![Deploy Jekyll with GitHub Pages](https://github.com/pro-cert-notes/pro-cert-notes.github.io/actions/workflows/jekyll-gh-pages.yml/badge.svg)](https://github.com/pro-cert-notes/pro-cert-notes.github.io/actions/workflows/jekyll-gh-pages.yml)
-[![Website](https://img.shields.io/website?url=https%3A%2F%2Fpro-cert-notes.github.io%2F&up_message=online&down_message=offline&label=site)](https://pro-cert-notes.github.io/)
-![Last Commit](https://img.shields.io/github/last-commit/pro-cert-notes/pro-cert-notes.github.io)
+[![Deploy Jekyll with GitHub Pages](https://github.com/certnotes/certnotes.github.io/actions/workflows/jekyll-gh-pages.yml/badge.svg)](https://github.com/certnotes/certnotes.github.io/actions/workflows/jekyll-gh-pages.yml)
+[![Website](https://img.shields.io/website?url=https%3A%2F%2Fcertnotes.github.io%2F&up_message=online&down_message=offline&label=site)](https://certnotes.github.io/)
+![Last Commit](https://img.shields.io/github/last-commit/certnotes/certnotes.github.io)
 ![Jekyll](https://img.shields.io/badge/Jekyll-4.x-cc0000?logo=jekyll)
 ![Ruby](https://img.shields.io/badge/Ruby-3.x-cc342d?logo=ruby)
 ![Node](https://img.shields.io/badge/Node-20.x-339933?logo=node.js&logoColor=white)
 ![GitHub Pages](https://img.shields.io/badge/Deployed%20on-GitHub%20Pages-222222?logo=githubpages)
-[![RSS](https://img.shields.io/badge/RSS-Feed-orange?logo=rss)](https://pro-cert-notes.github.io/feed.xml)
+[![RSS](https://img.shields.io/badge/RSS-Feed-orange?logo=rss)](https://certnotes.github.io/feed.xml)
 
 Jekyll-powered notes/blog site on AI, social sciences, humanities, and adjacent technical topics.
 
-Live site: <https://pro-cert-notes.github.io/>
+Live site: <https://certnotes.github.io/>
 
 ## Table of Contents
 
@@ -86,7 +86,7 @@ Open `http://127.0.0.1:4000`.
 
 ```bash
 npm ci --no-fund --no-audit
-GITHUB_TOKEN=... GITHUB_OWNER=pro-cert-notes node .github/scripts/build_recent_commits.mjs
+GITHUB_TOKEN=... GITHUB_OWNER=certnotes node .github/scripts/build_recent_commits.mjs
 ```
 
 The script writes `_data/recent_commits.json` (created if missing).
