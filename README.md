@@ -9,54 +9,66 @@
 ![GitHub Pages](https://img.shields.io/badge/Deployed%20on-GitHub%20Pages-222222?logo=githubpages)
 [![RSS](https://img.shields.io/badge/RSS-Feed-orange?logo=rss)](https://pro-cert-notes.github.io/feed.xml)
 
-Jekyll-powered personal notes/blog site on AI, social sciences, humanities, and adjacent technical topics.
+Jekyll-powered notes/blog site on AI, social sciences, humanities, and adjacent technical topics.
 
 Live site: <https://pro-cert-notes.github.io/>
 
+## Table of Contents
+
+- [Features](#features)
+- [Tech Stack](#tech-stack)
+- [Repository Layout](#repository-layout)
+- [Getting Started](#getting-started)
+- [Publishing Content](#publishing-content)
+- [Deployment](#deployment)
+- [Configuration Notes](#configuration-notes)
+- [Contributing](#contributing)
+- [License](#license)
+
 ## Features
 
-- Posts from `_posts/` with pagination (`5` posts per page)
+- Jekyll posts from `_posts/` with pagination (`5` posts per page)
 - Homepage sections for pinned repositories and recent GitHub commit activity
-- Tag index page (`/tags/`) plus auto-generated topic cloud on `/about/`
-- SEO, RSS feed, and sitemap support via Jekyll plugins
-- GitHub Pages deployment via GitHub Actions
-- Daily refresh of recent-commit data (deploy runs only when generated data changes)
+- Tag index page (`/tags/`) and auto-generated topic cloud on `/about/`
+- SEO metadata, RSS feed, and sitemap generation
+- GitHub Pages deployment with GitHub Actions
+- Scheduled refresh of recent-commit data
 
 ## Tech Stack
 
-- Jekyll (Ruby + Bundler)
+- Jekyll + Bundler
 - Minima via remote theme (`jekyll/minima`)
 - GitHub Pages + GitHub Actions
-- Node.js 20 (used by CI script that generates recent commit data)
+- Node.js 20 for `.github/scripts/build_recent_commits.mjs`
 
-## Project Structure
+## Repository Layout
 
 ```text
 .
 ├── .github/scripts/build_recent_commits.mjs  # Generates _data/recent_commits.json
-├── .github/workflows/jekyll-gh-pages.yml     # Build/deploy + daily refresh workflow
+├── .github/workflows/jekyll-gh-pages.yml     # Build/deploy workflow
 ├── .github/workflows/delete-workflow-runs.yml
-├── _config.yml                                # Theme, plugins, pagination, permalinks
-├── _includes/                                 # Reusable Liquid components
-├── _posts/                                    # Blog posts: YYYY-MM-DD-title.md
-├── _sass/minima/custom-styles.scss            # Minima overrides
-├── img/                                       # Images used by posts/pages
-├── index.html                                 # Home layout and sections
-├── posts.md                                   # /posts/
-├── tags.md                                    # /tags/
-├── about.md                                   # /about/
-├── Gemfile                                    # Ruby dependencies
-└── package.json                               # Node metadata for CI script
+├── _config.yml
+├── _includes/
+├── _posts/                                   # YYYY-MM-DD-title.md
+├── _sass/minima/custom-styles.scss
+├── img/
+├── index.html
+├── posts.md
+├── tags.md
+├── about.md
+├── Gemfile
+└── package.json
 ```
 
-## Quick Start
+## Getting Started
 
 ### Prerequisites
 
-- Ruby + Bundler
-- Node.js 20+ and npm (only needed if you want to run commit-data generation locally)
+- Ruby and Bundler
+- Node.js 20+ and npm (optional; only needed to generate recent-commit data locally)
 
-### Install
+### Install Dependencies
 
 ```bash
 bundle install
@@ -68,11 +80,20 @@ bundle install
 bundle exec jekyll serve
 ```
 
-Local URL: `http://127.0.0.1:4000`
+Open `http://127.0.0.1:4000`.
 
-## Content Workflow
+### Optional: Generate Recent Commit Data Locally
 
-1. Create `_posts/YYYY-MM-DD-title.md`.
+```bash
+npm ci --no-fund --no-audit
+GITHUB_TOKEN=... GITHUB_OWNER=pro-cert-notes node .github/scripts/build_recent_commits.mjs
+```
+
+The script writes `_data/recent_commits.json` (created if missing).
+
+## Publishing Content
+
+1. Create a post file: `_posts/YYYY-MM-DD-title.md`
 2. Add front matter:
 
 ```yaml
@@ -88,8 +109,10 @@ tags:
 ---
 ```
 
-3. Add images under `img/` and reference them with `{{ '/img/your-image.webp' | relative_url }}`.
-4. Push to `main` to trigger deployment.
+3. Add images under `img/` and reference via `{{ '/img/your-image.webp' | relative_url }}`
+4. Deploy by either:
+   - pushing to `main` with a commit message ending in `-rebuild`, or
+   - running the workflow manually from GitHub Actions
 
 ## Deployment
 
@@ -97,25 +120,25 @@ Primary workflow: `.github/workflows/jekyll-gh-pages.yml`
 
 Triggers:
 
-- Push to `main`
-- Manual run (`workflow_dispatch`)
-- Scheduled run at `00:00 UTC` daily
+- `push` to `main` (workflow starts), but build/deploy runs only when commit message ends with `-rebuild`
+- `workflow_dispatch` (manual run)
+- `schedule` daily at `00:00 UTC`
 
-Build/deploy flow:
+Deploy behavior:
 
-- Set up Node 20 and run `node .github/scripts/build_recent_commits.mjs`
-- For scheduled runs, skip deploy when `_data/recent_commits.json` is unchanged
-- Build site with `bundle exec jekyll build -d ./_site`
-- Upload artifact with `actions/upload-pages-artifact@v3`
-- Deploy with `actions/deploy-pages@v4`
+- Recent commit data is generated first using Node 20
+- Manual runs deploy
+- Scheduled runs deploy only if `_data/recent_commits.json` changed or a post exists with today's UTC date (`YYYY-MM-DD-*`)
+- Artifacts are deployed with `actions/deploy-pages@v4`
 
-Maintenance workflow: `.github/workflows/delete-workflow-runs.yml` (manual cleanup tool).
+Maintenance workflow: `.github/workflows/delete-workflow-runs.yml` (manual cleanup of workflow history).
 
 ## Configuration Notes
 
-- `future: false` in `_config.yml` prevents future-dated posts from publishing early.
-- `permalink: /posts/:title/` controls post URLs.
-- Recent activity uses generated `_data/recent_commits.json`.
+- `future: false` in `_config.yml` prevents publishing future-dated posts early
+- `permalink: /posts/:title/` controls post URLs
+- `timezone: Asia/Seoul`
+- `README.md` is excluded from Jekyll build output
 
 ## Contributing
 
@@ -123,4 +146,4 @@ Issues and pull requests are welcome for content corrections and site improvemen
 
 ## License
 
-No `LICENSE` file is present, so reuse permissions are not explicitly granted.
+No `LICENSE` file is currently present, so reuse permissions are not explicitly granted.
