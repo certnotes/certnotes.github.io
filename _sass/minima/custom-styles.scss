@@ -269,3 +269,43 @@ blockquote.callout {
   flex-shrink: 0;
 }
 
+/* =========================================================
+   Typography — Penguin Classics-ish
+   ========================================================= */
+
+:root {
+  --penguin-title: "EB Garamond", Garamond, "Times New Roman", serif;
+  --penguin-body: "Libre Baskerville", Baskerville, Georgia, serif;
+}
+
+/* Body text */
+body {
+  font-family: var(--penguin-body);
+  font-size: 18px;
+  line-height: 1.7;
+}
+
+/* Titles / headings */
+h1, h2, h3, h4, h5, h6,
+.post-title, .page-heading,
+.site-title {
+  font-family: var(--penguin-title);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  line-height: 1.2;
+}
+
+/* Post content width (book-like measure) */
+.post-content, .page-content {
+  max-width: 65ch;
+}
+
+/* Optional: slightly nicer paragraph rhythm */
+.post-content p, .page-content p {
+  margin-bottom: 1.1em;
+}
+
+.post-content, .page-content {
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
