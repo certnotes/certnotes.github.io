@@ -4,6 +4,8 @@ permalink: /posts/:title/
 future: false
 timezone: Asia/Seoul
 markdown: kramdown
+exclude:
+  - README.md
 
 plugins:
   - jekyll-remote-theme
