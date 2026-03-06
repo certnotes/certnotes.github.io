@@ -7,11 +7,11 @@ layout: home
 
 {%- if paginator == nil or paginator.page == 1 -%}
 {%- include repo_list.html -%}
-<hr style="margin-left:auto; margin-right:auto; width:50%; border:0; border-top:2px solid currentColor; opacity:0.25;">
+<hr style="margin-left:auto; margin-right:auto; width:50%; border:0; border-top:1px solid currentColor; opacity:0.25;">
 {%- assign recent_data = site.data.recent_commits -%}
 {%- if recent_data and recent_data.items and recent_data.items.size > 0 -%}
 {%- include recent_commits.html -%}
-<hr style="margin-left:auto; margin-right:auto; width:50%; border:0; border-top:2px solid currentColor; opacity:0.25;">
+<hr style="margin-left:auto; margin-right:auto; width:50%; border:0; border-top:1px solid currentColor; opacity:0.25;">
 {%- endif -%}
 {%- endif -%}
 <h2>Posts</h2>
