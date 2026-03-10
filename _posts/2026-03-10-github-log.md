@@ -32,7 +32,7 @@ GitHub is also useful because it can be examined by both people and software. A 
 
 Regular publication helps to both build credibility and display evidence of discipline. One good project may show promise, but a steady pattern of work shows discipline. It suggests that learning and experimentation is not an occasional performance, but a regular practice. That kind of consistency is persuasive.
 
-For students and job seekers in technical industries, there is lasting value in public portfolios. Published work can outlast a course, a role, or an institution. It becomes a lasting body of evidence. In a world where many people claim skills, visible proof of ongoing effort and ability is a strong advantage. Public portfolios can turn study from a private activity into a public record of competence.
+For students and job seekers in technical industries, there is lasting value in public portfolios. Published work can outlast a course, a role, or an institution. It becomes a preserved body of evidence. In a world where many people claim skills, visible proof of ongoing effort and ability is a strong advantage. Public portfolios can turn study from a private activity into a public record of competence.
 
 <div class="callout callout-warning">
   <p class="callout-title">{% octicon alert height:1em style:"display: inline;" aria-label:Alert %} Warning</p>
