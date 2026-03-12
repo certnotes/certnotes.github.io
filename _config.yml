@@ -6,7 +6,7 @@ timezone: Asia/Seoul
 markdown: kramdown
 exclude:
   - README.md
-  - _posts/
+  - _posts/*
   - about.md
   - posts.md
 
