@@ -7,6 +7,7 @@ markdown: kramdown
 exclude:
   - README.md
   - _posts/*
+  - tags.md
   - about.md
   - posts.md
 
