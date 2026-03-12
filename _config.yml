@@ -6,6 +6,9 @@ timezone: Asia/Seoul
 markdown: kramdown
 exclude:
   - README.md
+  - _posts/
+  - about.md
+  - posts.md
 
 plugins:
   - jekyll-remote-theme
