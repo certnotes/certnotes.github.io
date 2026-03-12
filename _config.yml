@@ -23,9 +23,9 @@ remote_theme: jekyll/minima
 minima:
   skin: auto
   show_excerpts: true
-  nav_pages:
-    - posts.md
-    - about.md
+#  nav_pages:
+#    - posts.md
+#    - about.md
 
 feed:
   excerpt_only: false
