@@ -29,7 +29,7 @@ if (!OWNER) {
 const SINCE_DAYS = Number(process.env.RECENT_COMMITS_SINCE_DAYS ?? 90);
 const MAX_REPOS_TO_SCAN = Number(process.env.MAX_REPOS_TO_SCAN ?? 0);
 const PER_REPO = Number(process.env.PER_REPO ?? 10);
-const MAX_ITEMS = Number(process.env.MAX_ITEMS ?? 5);
+const MAX_ITEMS = Number(process.env.MAX_ITEMS ?? 7);
 const GH_FETCH_MAX_RETRIES = Number(process.env.GH_FETCH_MAX_RETRIES ?? 5);
 const GH_FETCH_BASE_BACKOFF_MS = Number(process.env.GH_FETCH_BASE_BACKOFF_MS ?? 1000);
 
