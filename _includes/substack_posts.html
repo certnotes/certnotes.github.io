@@ -1,0 +1,24 @@
+{%- assign substack_data = site.data.substack_posts -%}
+{%- assign substack_posts = substack_data.posts | default: empty -%}
+
+{%- if substack_posts.size > 0 -%}
+  <ul class="post-list">
+    {%- for post in substack_posts -%}
+      <li>
+        <span class="post-meta">{{ post.published_at | date: "%b %-d, %Y" }}</span>
+        <h3>
+          <a class="post-link" href="{{ post.url | escape }}">{{ post.title | escape }}</a>
+        </h3>
+        {%- if post.excerpt -%}
+          <p>{{ post.excerpt | escape }}</p>
+        {%- endif -%}
+      </li>
+    {%- endfor -%}
+  </ul>
+    <a class="post-link" href="https://lostmemos.substack.com/archive">View all posts</a>
+  </p>
+{%- else -%}
+  <p class="substack-posts-empty">
+    Run <code>python3 scripts/fetch_substack_posts.py</code> to generate <code>_data/substack_posts.json</code>.
+  </p>
+{%- endif -%}

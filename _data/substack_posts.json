@@ -1,0 +1,48 @@
+{
+  "feed_url": "https://lostmemos.substack.com/feed",
+  "generated_at": "2026-03-13T09:15:51.867368+00:00",
+  "posts": [
+    {
+      "published_at": "2026-03-09T15:00:00+00:00",
+      "title": "GitHub Repos as an Auditable Learning Log",
+      "excerpt": "Publishing notes and projects on GitHub as part of your study routine can do more than display enthusiasm.",
+      "url": "https://lostmemos.substack.com/p/github-log"
+    },
+    {
+      "published_at": "2026-02-21T15:00:00+00:00",
+      "title": "Books vs Ebooks in UX",
+      "excerpt": "Physical books possess a defining characteristic that reflowable ebook formats (.epub, .mobi) struggle to replicate.",
+      "url": "https://lostmemos.substack.com/p/books-vs-ebooks"
+    },
+    {
+      "published_at": "2026-02-19T15:00:00+00:00",
+      "title": "Upcoming Series of Book Reviews",
+      "excerpt": "I suspect that it may be many years, if ever, that I will again have the freedom to engage in freewheeling intellectual inquiry (relatively) unconstrained by the typical strictures of life.",
+      "url": "https://lostmemos.substack.com/p/book-reviews"
+    },
+    {
+      "published_at": "2026-02-13T15:00:00+00:00",
+      "title": "Agentic AI and Middle Management",
+      "excerpt": "Agentic AI is changing the unit economics of knowledge work.",
+      "url": "https://lostmemos.substack.com/p/agentic-ai-management"
+    },
+    {
+      "published_at": "2026-02-10T15:00:00+00:00",
+      "title": "Declining Empires and Documentation Errors",
+      "excerpt": "If you want a surprisingly practical template for technical writing, look to The History of the Decline and Fall of the Roman Empire by Edward Gibbon.",
+      "url": "https://lostmemos.substack.com/p/decline-fall-doc"
+    },
+    {
+      "published_at": "2026-02-09T15:00:00+00:00",
+      "title": "The Straw that Holds Up the Camel’s Back",
+      "excerpt": "In many large organisations, technical subject matter experts (SMEs) are quietly essential yet chronically undervalued.",
+      "url": "https://lostmemos.substack.com/p/straw-camel"
+    },
+    {
+      "published_at": "2026-02-07T15:00:00+00:00",
+      "title": "Keep an AEye on Job Listings",
+      "excerpt": "If you’re tired of manually refreshing career pages, Visualping can watch job boards for you and send an alert(by email, Slack, or via an API/webhook integration) when it detects a new job posting.",
+      "url": "https://lostmemos.substack.com/p/job-listings"
+    }
+  ]
+}

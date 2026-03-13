@@ -29,6 +29,7 @@ Live site: <https://certnotes.github.io/>
 
 - Jekyll posts from `_posts/` with pagination (`5` posts per page)
 - Homepage sections for pinned repositories and recent GitHub commit activity
+- Homepage Substack post list powered by generated JSON data from the Lost Memos RSS feed
 - Tag index page (`/tags/`) and auto-generated topic cloud on `/about/`
 - SEO metadata, RSS feed, and sitemap generation
 - GitHub Pages deployment with GitHub Actions
@@ -48,12 +49,14 @@ Live site: <https://certnotes.github.io/>
 ├── .github/scripts/build_recent_commits.mjs  # Generates _data/recent_commits.json
 ├── .github/workflows/jekyll-gh-pages.yml     # Build/deploy workflow
 ├── .github/workflows/delete-workflow-runs.yml
+├── _data/substack_posts.json                  # Generated from the Substack RSS feed
 ├── _config.yml
 ├── _includes/
 ├── _posts/                                   # YYYY-MM-DD-title.md
 ├── _sass/minima/custom-styles.scss
 ├── img/
 ├── index.html
+├── scripts/fetch_substack_posts.py
 ├── posts.md
 ├── tags.md
 ├── about.md
@@ -81,6 +84,14 @@ bundle exec jekyll serve
 ```
 
 Open `http://127.0.0.1:4000`.
+
+### Refresh Substack Posts
+
+```bash
+python3 scripts/fetch_substack_posts.py
+```
+
+The script downloads `https://lostmemos.substack.com/feed` and writes the 7 most recent posts to `_data/substack_posts.json`.
 
 ### Optional: Generate Recent Commit Data Locally
 
