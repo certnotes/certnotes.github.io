@@ -29,8 +29,6 @@ concurrency:
 
 jobs:
   build:
-    if: >
-      github.event_name != 'push'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     outputs:
@@ -48,16 +46,13 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: npm
-
-      - name: Install Node dependencies
-        run: npm ci --no-fund --no-audit
 
       - name: Generate recent commits data
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_OWNER: ${{ github.repository_owner }}
           RECENT_COMMITS_SINCE_DAYS: 90
+          MAX_REPOS_TO_SCAN: 20
         run: node .github/scripts/build_recent_commits.mjs
 
       - name: Detect whether we should deploy
@@ -65,7 +60,7 @@ jobs:
         run: |
           set -euo pipefail
 
-          # For push/manual runs: always deploy (push is already gated by the job-level `if:`).
+          # For push/manual runs: always deploy.
           if [ "${{ github.event_name }}" != "schedule" ]; then
             echo "should_deploy=true" >> "$GITHUB_OUTPUT"
             exit 0
@@ -78,7 +73,7 @@ jobs:
             exit 0
           fi
 
-          echo "No changes in _data/recent_commits.json and no posts dated today; skipping build/deploy."
+          echo "No changes in _data/recent_commits.json; skipping build/deploy."
           echo "should_deploy=false" >> "$GITHUB_OUTPUT"
 
       - name: Setup Pages
@@ -92,6 +87,15 @@ jobs:
         with:
           ruby-version: "3.3"
           bundler-cache: true
+
+      - name: Restore Jekyll cache
+        if: steps.detect_changes.outputs.should_deploy == 'true'
+        uses: actions/cache@v4
+        with:
+          path: .jekyll-cache
+          key: ${{ runner.os }}-jekyll-${{ hashFiles('Gemfile', '_config.yml', '_includes/**', '_layouts/**', '_posts/**', '_sass/**', '*.html', '*.md') }}
+          restore-keys: |
+            ${{ runner.os }}-jekyll-
 
       - name: Build with Jekyll
         if: steps.detect_changes.outputs.should_deploy == 'true'
