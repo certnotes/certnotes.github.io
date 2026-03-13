@@ -268,3 +268,7 @@ blockquote.callout {
   vertical-align: -0.125em;
   flex-shrink: 0;
 }
+
+.post-content, .page-content {
+  text-rendering: optimizeLegibility;
+}
