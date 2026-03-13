@@ -6,7 +6,6 @@
 ![Jekyll](https://img.shields.io/badge/Jekyll-4.x-cc0000?logo=jekyll)
 ![Ruby](https://img.shields.io/badge/Ruby-3.3-cc342d?logo=ruby)
 ![GitHub Pages](https://img.shields.io/badge/Deployed%20on-GitHub%20Pages-222222?logo=githubpages)
-[![RSS](https://img.shields.io/badge/RSS-Feed-orange?logo=rss)](https://certnotes.github.io/feed.xml)
 
 Personal GitHub Pages site built with Jekyll. The current repo is centered on a custom home page that pulls together pinned GitHub repositories, optional recent GitHub commit activity, and recent Substack posts.
 
@@ -66,7 +65,6 @@ The home page currently renders three content blocks:
 
 - site metadata
 - permalink format
-- timezone (`Asia/Seoul`)
 - the remote Minima theme
 - installed Jekyll plugins
 - the pinned repository names shown on the homepage

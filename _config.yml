@@ -1,7 +1,6 @@
 title: AIs Through the Looking Glass
 description: A blog and portfolio site focusing on the intersection of technology, social sciences, and humanities.
 permalink: /posts/:title/
-timezone: Asia/Seoul
 markdown: kramdown
 exclude:
   - README.md
