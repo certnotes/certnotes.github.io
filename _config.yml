@@ -1,7 +1,6 @@
 title: AIs Through the Looking Glass
-description: Artificial intelligence in more ways than one. A blog and portfolio site focusing on the intersection of technology, social sciences, and humanities.
+description: A blog and portfolio site focusing on the intersection of technology, social sciences, and humanities.
 permalink: /posts/:title/
-future: false
 timezone: Asia/Seoul
 markdown: kramdown
 exclude:
@@ -19,9 +18,6 @@ remote_theme: jekyll/minima
 minima:
   skin: auto
   show_excerpts: true
-
-feed:
-  excerpt_only: false
 
 pinned_repos:
   - data-AI-eng
