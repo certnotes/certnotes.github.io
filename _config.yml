@@ -6,10 +6,6 @@ timezone: Asia/Seoul
 markdown: kramdown
 exclude:
   - README.md
-  - _posts/*
-  - tags.md
-  - about.md
-  - posts.md
 
 plugins:
   - jekyll-remote-theme
@@ -17,22 +13,15 @@ plugins:
   - jekyll-sitemap
   - jekyll-seo-tag
   - jekyll-octicons
-  - jekyll-paginate
 
 remote_theme: jekyll/minima
 
 minima:
   skin: auto
   show_excerpts: true
-#  nav_pages:
-#    - posts.md
-#    - about.md
 
 feed:
   excerpt_only: false
-  
-paginate: 5
-paginate_path: "/page/:num/"
 
 pinned_repos:
   - data-AI-eng
