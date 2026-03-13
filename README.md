@@ -4,97 +4,29 @@
 [![Website](https://img.shields.io/website?url=https%3A%2F%2Fcertnotes.github.io%2F&up_message=online&down_message=offline&label=site)](https://certnotes.github.io/)
 ![Last Commit](https://img.shields.io/github/last-commit/certnotes/certnotes.github.io)
 ![Jekyll](https://img.shields.io/badge/Jekyll-4.x-cc0000?logo=jekyll)
-![Ruby](https://img.shields.io/badge/Ruby-3.x-cc342d?logo=ruby)
+![Ruby](https://img.shields.io/badge/Ruby-3.3-cc342d?logo=ruby)
 ![GitHub Pages](https://img.shields.io/badge/Deployed%20on-GitHub%20Pages-222222?logo=githubpages)
 [![RSS](https://img.shields.io/badge/RSS-Feed-orange?logo=rss)](https://certnotes.github.io/feed.xml)
 
-Personal Jekyll site for essays, notes, and project links across AI, social science, and adjacent technical topics.
+Personal GitHub Pages site built with Jekyll. The current repo is centered on a custom home page that pulls together pinned GitHub repositories, optional recent GitHub commit activity, and recent Substack posts.
 
 Live site: <https://certnotes.github.io/>
 
-## What This Repo Contains
+## Overview
 
-This repository powers a GitHub Pages site built with Jekyll and the `jekyll/minima` remote theme.
+This repository is a lightweight Jekyll site rather than a large custom theme or app:
 
-The homepage currently combines:
+- `jekyll/minima` is used via `jekyll-remote-theme`
+- the homepage is defined in [`index.html`](index.html)
+- most customization lives in [`_includes/`](./_includes)
+- styling overrides live in [`_sass/minima/custom-styles.scss`](_sass/minima/custom-styles.scss)
+- external data is stored in [`_data/`](./_data)
 
-- pinned GitHub repositories from `site.github.public_repositories`
-- recent GitHub commit activity from `_data/recent_commits.json`
-- recent Substack posts from `_data/substack_posts.json`
+The home page currently renders three content blocks:
 
-## Features
-
-- GitHub Pages site with Jekyll and Minima theme overrides
-- homepage repo cards for pinned repositories defined in `_config.yml`
-- optional recent GitHub activity section rendered from generated JSON
-- recent Substack posts rendered from generated JSON
-- SEO, RSS feed, and sitemap support via Jekyll plugins
-- automated GitHub Pages deployment with scheduled refreshes
-
-## Quick Start
-
-### Prerequisites
-
-Required for local site development:
-
-- Ruby 3.x
-- Bundler
-
-Optional for regenerating dynamic data locally:
-
-- Node.js 20+ for recent GitHub commits data
-- Python 3.11+ for Substack feed data
-
-### Install
-
-```bash
-bundle install
-```
-
-### Run Locally
-
-```bash
-bundle exec jekyll serve
-```
-
-Then open <http://127.0.0.1:4000>.
-
-## Refresh Generated Data
-
-Refresh Substack posts:
-
-```bash
-python3 scripts/fetch_substack_posts.py
-```
-
-This writes `_data/substack_posts.json`.
-
-Refresh recent GitHub commits:
-
-```bash
-GITHUB_TOKEN=... GITHUB_OWNER=certnotes node .github/scripts/build_recent_commits.mjs
-```
-
-This writes `_data/recent_commits.json` when recent activity is found.
-
-## Deployment
-
-Primary workflow: `.github/workflows/jekyll-gh-pages.yml`
-
-It runs on:
-
-- pushes to `main`, except README-only changes
-- manual dispatch
-- a daily schedule at `00:00 UTC`
-
-The deployment job:
-
-1. generates recent GitHub commit data
-2. skips scheduled deploys when the generated commit data has not changed
-3. builds the site with Jekyll
-4. publishes the result to GitHub Pages
-
-Maintenance workflow: `.github/workflows/delete-workflow-runs.yml`
+1. pinned repositories from `site.github.public_repositories`, filtered by `pinned_repos` in `_config.yml`
+2. recent GitHub commits from `_data/recent_commits.json` when that file exists
+3. recent Substack posts from `_data/substack_posts.json`
 
 ## Repository Layout
 
@@ -110,25 +42,149 @@ Maintenance workflow: `.github/workflows/delete-workflow-runs.yml`
 ├── _data/
 │   └── substack_posts.json
 ├── _includes/
-├── _sass/minima/custom-styles.scss
+│   ├── custom-head.html
+│   ├── footer.html
+│   ├── recent_commits.html
+│   ├── repo_entries.html
+│   ├── repo_list.html
+│   └── substack_posts.html
+├── _sass/
+│   └── minima/
+│       └── custom-styles.scss
 ├── Gemfile
+├── README.md
 ├── index.html
 └── scripts/
     └── fetch_substack_posts.py
 ```
 
-## Configuration
+## How It Works
 
-Key site settings live in `_config.yml`, including:
+### Jekyll configuration
 
-- permalink structure
-- timezone
-- remote theme and Jekyll plugins
-- pinned repositories shown on the homepage
+[`_config.yml`](_config.yml) defines:
 
-## Contributing
+- site metadata
+- permalink format
+- timezone (`Asia/Seoul`)
+- the remote Minima theme
+- installed Jekyll plugins
+- the pinned repository names shown on the homepage
 
-Issues and pull requests are welcome for content fixes and site improvements.
+### Homepage includes
+
+The homepage in [`index.html`](index.html) composes these includes:
+
+- [`_includes/repo_list.html`](_includes/repo_list.html): renders repository cards
+- [`_includes/recent_commits.html`](_includes/recent_commits.html): renders recent GitHub activity if `_data/recent_commits.json` is present and non-empty
+- [`_includes/substack_posts.html`](_includes/substack_posts.html): renders recent Substack posts from `_data/substack_posts.json`
+
+### Data generation
+
+Two generated JSON files feed dynamic sections:
+
+- `_data/substack_posts.json`
+  - generated by [`scripts/fetch_substack_posts.py`](scripts/fetch_substack_posts.py)
+  - present in this checkout
+  - built from the `https://lostmemos.substack.com/feed` RSS feed
+- `_data/recent_commits.json`
+  - generated by [`.github/scripts/build_recent_commits.mjs`](.github/scripts/build_recent_commits.mjs)
+  - not currently present in this checkout
+  - only appears when the GitHub activity script has produced output
+
+## Local Development
+
+### Prerequisites
+
+Required:
+
+- Ruby 3.3
+- Bundler
+
+Optional:
+
+- Python 3 for refreshing Substack data
+- Node.js 20 for generating recent GitHub commit data
+- a GitHub token for the recent commit script
+
+### Install dependencies
+
+```bash
+bundle install
+```
+
+### Run the site
+
+```bash
+bundle exec jekyll serve
+```
+
+Then open <http://127.0.0.1:4000>.
+
+## Refresh Generated Data
+
+### Substack posts
+
+```bash
+python3 scripts/fetch_substack_posts.py
+```
+
+This downloads the RSS feed and writes `_data/substack_posts.json`.
+
+Useful flags:
+
+```bash
+python3 scripts/fetch_substack_posts.py --limit 5
+python3 scripts/fetch_substack_posts.py --feed-url https://example.substack.com/feed
+```
+
+### Recent GitHub commits
+
+```bash
+GITHUB_TOKEN=... GITHUB_OWNER=certnotes node .github/scripts/build_recent_commits.mjs
+```
+
+Useful environment variables:
+
+- `RECENT_COMMITS_SINCE_DAYS` default: `90`
+- `MAX_REPOS_TO_SCAN` default: `0` (no limit)
+- `PER_REPO` default: `10`
+- `MAX_ITEMS` default: `7`
+
+The script writes `_data/recent_commits.json` only when the comparable output changes.
+
+## GitHub Actions
+
+### Deployment workflow
+
+Primary workflow: [`.github/workflows/jekyll-gh-pages.yml`](.github/workflows/jekyll-gh-pages.yml)
+
+Triggers:
+
+- pushes to `main`
+- manual dispatch
+- daily schedule at `00:00 UTC`
+
+Behavior:
+
+1. checks out the repository
+2. runs the recent-commits Node script
+3. always deploys on push and manual runs
+4. on scheduled runs, deploys only if `_data/recent_commits.json` changed
+5. builds the site with Jekyll
+6. publishes the built site to GitHub Pages
+
+Note: README-only changes do not trigger this workflow because `README.md` is ignored in `paths-ignore`.
+
+### Maintenance workflow
+
+[`.github/workflows/delete-workflow-runs.yml`](.github/workflows/delete-workflow-runs.yml) deletes all workflow runs weekly and also supports manual dispatch.
+
+## Notes
+
+- The repo relies on `jekyll-github-metadata`, so repository cards are built from GitHub metadata rather than a local data file.
+- The footer references `posts.md`, but that file is not present in this checkout. If a posts index is intended, it should be added separately.
+- [`_includes/custom-head.html`](_includes/custom-head.html) loads Font Awesome from a CDN to preserve the mobile menu icon in the remote theme.
 
 ## License
 
