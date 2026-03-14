@@ -302,21 +302,19 @@ blockquote.callout {
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  margin-bottom: 0.35rem;
 }
 
 .recent-commit-icon {
-  width: 1em;
-  height: 1em;
   display: inline-flex;
-  align-items: center;
+  align-items: baseline;
   justify-content: center;
-  flex: 0 0 1em;
+  line-height: 1;
+  flex: 0 0 auto;
 }
 
 .recent-commit-icon .octicon {
-  width: 1em;
-  height: 1em;
-  display: block;
+  vertical-align: middle;
 }
 
 .recent-commit-text {
