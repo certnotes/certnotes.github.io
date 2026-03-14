@@ -291,3 +291,22 @@ blockquote.callout {
 .post-content, .page-content {
   text-rendering: optimizeLegibility;
 }
+
+.recent-commits {
+  list-style: none;
+  margin-left: 0;
+  padding-left: 0;
+}
+
+.recent-commits li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  margin-bottom: 0.35rem;
+}
+
+.recent-commit-icon {
+  line-height: 1;
+  flex: 0 0 auto;
+  margin-top: 0.1rem;
+}
