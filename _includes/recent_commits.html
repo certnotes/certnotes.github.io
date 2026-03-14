@@ -8,12 +8,12 @@
       {%- for c in items limit:max_recent_commits -%}
 <li>
   <span class="recent-commit-icon" aria-hidden="true">
-    {% octicon git-commit %}
+    {% octicon git-commit height:16 %}
   </span>
   <span class="recent-commit-text">
-    <a href="https://github.com/{{ site.data.recent_commits.owner | escape }}/{{ c.repo | escape }}">{{ c.repo | escape }}</a>
+    <a href="{{ c.url }}">{{ c.repo | escape }}</a>
     <span class="recent-commit-sep">·</span>
-            <a class="recent-commit-message" href="{{ c.url | escape }}">{{ c.message | escape }}</a>
+    <span class="recent-commit-message">{{ c.message | escape }}</span>
     <span class="recent-commit-sep">·</span>
     <span class="recent-commit-date">{{ c.date | date: "%d-%m-%Y" }}</span>
   </span>
