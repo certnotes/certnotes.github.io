@@ -1,4 +1,4 @@
-title: AIs Through the Looking Glass
+title: CERTNOTES.GITHUB.IO
 description: A blog and portfolio site focusing on the intersection of technology, social sciences, and humanities.
 permalink: /posts/:title/
 markdown: kramdown
@@ -19,6 +19,7 @@ rss_url: https://lostmemos.substack.com/feed
 minima:
   skin: auto
   show_excerpts: true
+  hide_site_feed_link: true
 
 pinned_repos:
   - linux-cyber
