@@ -8,10 +8,13 @@ exclude:
 plugins:
   - jekyll-remote-theme
   - jekyll-sitemap
+  - jekyll-RSS
   - jekyll-seo-tag
   - jekyll-octicons
 
 remote_theme: jekyll/minima
+
+rss_url: https://lostmemos.substack.com/feed
 
 minima:
   skin: auto
