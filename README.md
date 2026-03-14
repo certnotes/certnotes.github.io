@@ -16,7 +16,7 @@ Live site: <https://certnotes.github.io/>
 This repository powers a lightweight homepage that combines:
 
 - pinned GitHub repositories from `site.github.public_repositories`
-- recent GitHub commit activity from `_data/recent_commits.json`
+- recent GitHub commit activity from generated `_data/recent_commits.json`
 - recent Substack posts from `_data/substack_posts.json`
 
 Most site customization lives in [`_includes/`](./_includes), [`index.html`](./index.html), and [`_sass/minima/custom-styles.scss`](./_sass/minima/custom-styles.scss).
@@ -43,10 +43,7 @@ Most site customization lives in [`_includes/`](./_includes), [`index.html`](./i
 ├── _data/
 │   └── substack_posts.json
 ├── _includes/
-│   ├── custom-head.html
-│   ├── footer.html
 │   ├── recent_commits.html
-│   ├── repo_entries.html
 │   ├── repo_list.html
 │   └── substack_posts.html
 ├── _sass/

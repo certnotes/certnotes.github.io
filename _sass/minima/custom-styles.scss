@@ -1,3 +1,22 @@
+.home-intro {
+  text-align: center;
+}
+
+.section-divider {
+  width: 50%;
+  margin-left: auto;
+  margin-right: auto;
+  border: 0;
+  border-top: 1px solid currentColor;
+  opacity: 0.25;
+}
+
+.section-heading-meta {
+  font-style: normal;
+  font-weight: normal;
+  font-size: 0.8rem;
+}
+
 /* =========================================================
    Callouts (GitHub-like)
    ========================================================= */

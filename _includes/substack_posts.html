@@ -1,8 +1,8 @@
 {%- assign substack_data = site.data.substack_posts -%}
 {%- assign substack_posts = substack_data.posts | default: empty -%}
 {%- if substack_posts.size > 0 -%}
-<hr style="margin-left:auto; margin-right:auto; width:50%; border:0; border-top:1px solid currentColor; opacity:0.25;">
-<h2>Recent Posts <span style="font-style: normal; font-weight: normal; font-size: 0.8rem;">(Substack articles)</span></h2>
+<hr class="section-divider">
+<h2>Recent Posts <span class="section-heading-meta">(Substack articles)</span></h2>
   <ul class="post-list">
     {%- for post in substack_posts -%}
       <li>
@@ -16,6 +16,7 @@
       </li>
     {%- endfor -%}
   </ul>
+  <p>
     <a class="post-link" href="https://lostmemos.substack.com/archive">View all posts</a>
   </p>
 {%- else -%}

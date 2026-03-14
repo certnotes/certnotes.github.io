@@ -2,7 +2,7 @@
 {%- assign max_recent_commits = 7 -%}
 
 <section id="recent-commits-block">
-  <h2>Recent Activity <span style="font-style: normal; font-weight: normal; font-size: 0.8rem;">(GitHub commits)</span></h2>
+  <h2>Recent Activity <span class="section-heading-meta">(GitHub commits)</span></h2>
   {%- if items.size > 0 -%}
     <ul>
       {%- for c in items limit:max_recent_commits -%}
