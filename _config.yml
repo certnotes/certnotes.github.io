@@ -8,7 +8,7 @@ exclude:
 plugins:
   - jekyll-remote-theme
   - jekyll-sitemap
-  - jekyll-RSS
+  - jekyll-rss
   - jekyll-seo-tag
   - jekyll-octicons
 
