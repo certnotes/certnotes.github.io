@@ -19,7 +19,7 @@ minima:
   show_excerpts: true
 
 pinned_repos:
-  - data-AI-eng
   - linux-cyber
+  - data-AI-eng
   - BA-PO-econ
   - open-banking-lakehouse

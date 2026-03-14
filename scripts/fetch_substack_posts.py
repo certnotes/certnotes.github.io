@@ -93,7 +93,7 @@ def fetch_feed_xml(feed_url: str) -> bytes:
     request = Request(
         feed_url,
         headers={
-            "User-Agent": "certnotes-substack-fetcher/1.0 (+https://certnotes.github.io/)",
+            "User-Agent": "Mozilla/5.0",
             "Accept": "application/rss+xml, application/xml, text/xml;q=0.9, */*;q=0.8",
         },
     )
