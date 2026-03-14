@@ -14,8 +14,6 @@ plugins:
 
 remote_theme: jekyll/minima
 
-rss_url: https://lostmemos.substack.com/feed
-
 minima:
   skin: auto
   show_excerpts: true
