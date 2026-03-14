@@ -11,25 +11,25 @@ Personal GitHub Pages site built with Jekyll and the remote `minima` theme.
 
 Live site: <https://certnotes.github.io/>
 
-## Overview
+## What This Repo Contains
 
-This repository powers a lightweight homepage that combines:
+This repository powers a small personal homepage that combines:
 
-- pinned GitHub repositories from `site.github.public_repositories`
+- pinned GitHub repositories sourced through `jekyll-github-metadata`
 - recent GitHub commit activity from generated `_data/recent_commits.json`
-- recent Substack posts from `_data/substack_posts.json`
+- recent Substack posts from generated `_data/substack_posts.json`
 
-Most site customization lives in [`_includes/`](./_includes), [`index.html`](./index.html), and [`_sass/minima/custom-styles.scss`](./_sass/minima/custom-styles.scss).
+Most site customization lives in [`index.html`](./index.html), [`_includes/`](./_includes), and [`_sass/minima/custom-styles.scss`](./_sass/minima/custom-styles.scss).
 
 ## Features
 
-- Jekyll site deployed to GitHub Pages
-- Remote `jekyll/minima` theme with local include and style overrides
-- Pinned repository cards driven by `_config.yml`
-- Generated JSON data for recent GitHub activity and Substack posts
-- Scheduled GitHub Actions workflow to refresh recent activity and redeploy when data changes
+- GitHub Pages deployment with Jekyll
+- Remote `jekyll/minima` theme plus local include/style overrides
+- Config-driven pinned repository cards from [`_config.yml`](./_config.yml)
+- Generated data files for GitHub activity and Substack posts
+- Scheduled GitHub Actions automation for refresh and deployment
 
-## Repository Structure
+## Repository Layout
 
 ```text
 .
@@ -56,25 +56,22 @@ Most site customization lives in [`_includes/`](./_includes), [`index.html`](./i
     └── fetch_substack_posts.py
 ```
 
-## Local Development
+## Quick Start
 
 ### Prerequisites
 
 - Ruby 3.3
 - Bundler
+- Python 3 if you want to regenerate Substack data locally
+- Node.js 20 if you want to regenerate GitHub activity data locally
 
-Optional tools for regenerating data locally:
-
-- Python 3 for Substack data
-- Node.js 20 for GitHub activity data
-
-### Install
+### Install dependencies
 
 ```bash
 bundle install
 ```
 
-### Run the site
+### Run locally
 
 ```bash
 bundle exec jekyll serve
@@ -82,47 +79,55 @@ bundle exec jekyll serve
 
 Open <http://127.0.0.1:4000>.
 
-## Content and Data Sources
+## Content and Data
 
 ### Pinned repositories
 
-Pinned repositories are defined in [`_config.yml`](./_config.yml) under `pinned_repos`. The homepage renders those repositories using GitHub metadata provided by `jekyll-github-metadata`.
+Pinned repositories are defined in [`_config.yml`](./_config.yml) under `pinned_repos`. The homepage renders those repositories with metadata exposed by `jekyll-github-metadata`.
 
 ### Substack posts
 
-Refresh the Substack feed data with:
+Fetch recent Substack posts into [`_data/substack_posts.json`](./_data/substack_posts.json):
 
 ```bash
 python3 scripts/fetch_substack_posts.py
 ```
 
-Useful flags:
+Useful examples:
 
 ```bash
 python3 scripts/fetch_substack_posts.py --limit 5
 python3 scripts/fetch_substack_posts.py --feed-url https://example.substack.com/feed
 ```
 
-This writes [`_data/substack_posts.json`](./_data/substack_posts.json).
-
 ### Recent GitHub commits
 
-Generate recent commit data with:
+Generate recent commit data into `_data/recent_commits.json`:
 
 ```bash
 GITHUB_TOKEN=... GITHUB_OWNER=certnotes node .github/scripts/build_recent_commits.mjs
 ```
 
-Useful environment variables:
+Supported environment variables:
 
 - `RECENT_COMMITS_SINCE_DAYS` default: `90`
 - `MAX_REPOS_TO_SCAN` default: `0` (no limit)
 - `PER_REPO` default: `10`
 - `MAX_ITEMS` default: `7`
+- `REPO_FETCH_CONCURRENCY` default: `6`
+- `GH_FETCH_MAX_RETRIES` default: `5`
+- `GH_FETCH_BASE_BACKOFF_MS` default: `1000`
 
-This writes `_data/recent_commits.json` only when the comparable output changes.
+The generator skips stale repositories before requesting commits, keeps only the most recent items in memory, retries transient GitHub API failures with backoff, and rewrites the output file only when the comparable payload changes.
 
-## GitHub Actions
+Generated commit items contain:
+
+- `repo`
+- `url`
+- `date`
+- `message`
+
+## Automation
 
 ### Deployment workflow
 
@@ -130,27 +135,27 @@ Primary workflow: [`.github/workflows/jekyll-gh-pages.yml`](./.github/workflows/
 
 Triggers:
 
-- pushes to `main`
+- push to `main`
 - manual dispatch
 - weekly schedule on Sunday at `00:00 UTC`
 
-Behavior:
+Workflow behavior:
 
 1. Checks out the repository.
 2. Generates `_data/recent_commits.json`.
-3. Always deploys on push and manual runs.
+3. Deploys on push and manual runs.
 4. On scheduled runs, deploys only if `_data/recent_commits.json` changed.
 5. Builds the site with Jekyll.
 6. Publishes the built site to GitHub Pages.
 
 Notes:
 
-- `README.md` changes do not trigger the deployment workflow because the file is ignored in `paths-ignore`.
-- `README.md` is also excluded from the Jekyll build via [`_config.yml`](./_config.yml).
+- `README.md` changes do not trigger the deployment workflow because the workflow ignores that path on push.
+- `README.md` is excluded from the Jekyll build via [`_config.yml`](./_config.yml).
 
 ### Maintenance workflow
 
-[`.github/workflows/delete-workflow-runs.yml`](./.github/workflows/delete-workflow-runs.yml) deletes old workflow runs weekly and also supports manual dispatch.
+[`.github/workflows/delete-workflow-runs.yml`](./.github/workflows/delete-workflow-runs.yml) removes old workflow runs weekly and also supports manual dispatch.
 
 ## Tech Stack
 

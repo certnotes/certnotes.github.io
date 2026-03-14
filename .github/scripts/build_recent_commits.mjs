@@ -9,6 +9,7 @@
  * - MAX_REPOS_TO_SCAN (optional, default 0): max repos to fetch commits from; 0 means no limit
  * - PER_REPO (optional, default 10): commits per repo to fetch
  * - MAX_ITEMS (optional, default 5): max items in output
+ * - REPO_FETCH_CONCURRENCY (optional, default 6): concurrent repo commit requests
  */
 
 import fs from "node:fs";
@@ -30,6 +31,7 @@ const SINCE_DAYS = Number(process.env.RECENT_COMMITS_SINCE_DAYS ?? 90);
 const MAX_REPOS_TO_SCAN = Number(process.env.MAX_REPOS_TO_SCAN ?? 0);
 const PER_REPO = Number(process.env.PER_REPO ?? 10);
 const MAX_ITEMS = Number(process.env.MAX_ITEMS ?? 7);
+const REPO_FETCH_CONCURRENCY = Number(process.env.REPO_FETCH_CONCURRENCY ?? 6);
 const GH_FETCH_MAX_RETRIES = Number(process.env.GH_FETCH_MAX_RETRIES ?? 5);
 const GH_FETCH_BASE_BACKOFF_MS = Number(process.env.GH_FETCH_BASE_BACKOFF_MS ?? 1000);
 
@@ -86,21 +88,15 @@ async function ghFetch(url, { method = "GET" } = {}) {
   }
 }
 
-async function getOwnerType(owner) {
-  const info = await ghFetch(`https://api.github.com/users/${encodeURIComponent(owner)}`);
-  return info?.type; // "User" or "Organization"
+function clampPositiveInteger(value, fallback) {
+  return Number.isInteger(value) && value > 0 ? value : fallback;
 }
 
 async function listRepos(owner) {
-  const ownerType = await getOwnerType(owner);
-  const base =
-    ownerType === "Organization"
-      ? `https://api.github.com/orgs/${encodeURIComponent(owner)}/repos`
-      : `https://api.github.com/users/${encodeURIComponent(owner)}/repos`;
-
   const filtered = [];
   let page = 1;
   while (true) {
+    const base = `https://api.github.com/users/${encodeURIComponent(owner)}/repos`;
     const url = `${base}?per_page=100&page=${page}&sort=updated&direction=desc&type=owner`;
     const batch = await ghFetch(url);
     if (!Array.isArray(batch) || batch.length === 0) break;
@@ -131,17 +127,16 @@ async function listCommits(owner, repoName) {
 
 function normalizeCommit(item, repoName) {
   const c = item?.commit;
-  const author = c?.author?.name ?? item?.author?.login ?? "Unknown";
   const date = c?.author?.date ?? c?.committer?.date ?? null;
   const message = (c?.message ?? "").split("\n")[0].trim();
+  const timestamp = date ? Date.parse(date) : 0;
 
   return {
     repo: repoName,
-    sha: item?.sha ?? null,
     url: item?.html_url ?? null,
-    author,
     date,
     message,
+    timestamp: Number.isFinite(timestamp) ? timestamp : 0,
   };
 }
 
@@ -160,9 +155,7 @@ async function mapLimit(items, limit, mapper) {
 }
 
 function sortByDateDesc(a, b) {
-  const da = a?.date ? Date.parse(a.date) : 0;
-  const db = b?.date ? Date.parse(b.date) : 0;
-  return db - da;
+  return (b?.timestamp ?? 0) - (a?.timestamp ?? 0);
 }
 
 function readExistingJson(p) {
@@ -180,9 +173,7 @@ function ensureDirExists(p) {
 function commitItemEqual(a, b) {
   return (
     a?.repo === b?.repo &&
-    a?.sha === b?.sha &&
     a?.url === b?.url &&
-    a?.author === b?.author &&
     a?.date === b?.date &&
     a?.message === b?.message
   );
@@ -202,32 +193,48 @@ function outputComparableEqual(existing, out) {
   return true;
 }
 
+function shouldScanRepo(repo, cutoff) {
+  if (!repo || repo.archived || repo.disabled || repo.fork || repo.private) return false;
+  if (!repo.pushed_at) return true;
+
+  const pushed = Date.parse(repo.pushed_at);
+  return !Number.isFinite(pushed) || pushed >= cutoff;
+}
+
+function trimCommitForOutput(commit) {
+  return {
+    repo: commit.repo,
+    url: commit.url,
+    date: commit.date,
+    message: commit.message,
+  };
+}
+
+function insertTopCommit(topCommits, commit, limit) {
+  if (!commit?.date || !commit.message) return;
+
+  topCommits.push(commit);
+  topCommits.sort(sortByDateDesc);
+  if (topCommits.length > limit) topCommits.length = limit;
+}
+
 async function main() {
-  const repos = await listRepos(OWNER);
+  const cutoff = Date.now() - SINCE_DAYS * 24 * 60 * 60 * 1000;
+  const allRepos = await listRepos(OWNER);
+  const repos = allRepos.filter((repo) => shouldScanRepo(repo, cutoff));
+  const concurrency = clampPositiveInteger(REPO_FETCH_CONCURRENCY, 6);
 
-  let commits = [];
-  await mapLimit(repos, 6, async (repo) => {
+  const commits = [];
+  await mapLimit(repos, concurrency, async (repo) => {
     const repoName = repo.name;
-
-    // Optional: skip repos with no recent pushes (cheap filter)
-    if (repo.pushed_at) {
-      const pushed = Date.parse(repo.pushed_at);
-      const cutoff = Date.now() - SINCE_DAYS * 24 * 60 * 60 * 1000;
-      if (pushed < cutoff) return;
-    }
 
     try {
       const list = await listCommits(OWNER, repoName);
-      for (const item of list) commits.push(normalizeCommit(item, repoName));
+      for (const item of list) insertTopCommit(commits, normalizeCommit(item, repoName), MAX_ITEMS);
     } catch (e) {
       console.warn(`Failed commits for ${repoName}: ${String(e.message ?? e)}`);
     }
   });
-
-  commits = commits
-    .filter((c) => c.date && c.message)
-    .sort(sortByDateDesc)
-    .slice(0, MAX_ITEMS);
 
   // Make generated_at stable: use newest commit date, not "now"
   const generated_at = commits[0]?.date ?? null;
@@ -236,7 +243,7 @@ async function main() {
     owner: OWNER,
     since_days: SINCE_DAYS,
     generated_at,
-    items: commits,
+    items: commits.map(trimCommitForOutput),
   };
 
   // Only write if meaningful content changed
