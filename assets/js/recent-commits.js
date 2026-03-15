@@ -106,6 +106,19 @@
     return config.dateFormatter.format(date).replace(/\//g, "-");
   }
 
+  function normalizeRenderableData(data) {
+    const owner = typeof data?.owner === "string" ? data.owner.trim() : "";
+    const items = Array.isArray(data?.items)
+      ? data.items
+          .filter((item) => item?.repo && item?.url && item?.message && item?.date)
+          .slice(0, config.maxItems)
+      : [];
+
+    if (!owner || !items.length) return null;
+
+    return { owner, items };
+  }
+
   function readCache() {
     try {
       const raw = window.localStorage.getItem(config.cacheKey);
@@ -114,13 +127,15 @@
       const cached = JSON.parse(raw);
       const fetchedAt = Number(cached?.fetchedAt);
       if (!Number.isFinite(fetchedAt)) return null;
-      if (!cached?.data || !Array.isArray(cached.data.items)) return null;
+
+      const normalizedData = normalizeRenderableData(cached?.data);
+      if (!normalizedData) return null;
 
       const ageMs = Date.now() - fetchedAt;
       if (ageMs > config.staleCacheTtlMs) return null;
 
       return {
-        data: cached.data,
+        data: normalizedData,
         isFresh: ageMs <= config.cacheTtlMs,
       };
     } catch {
@@ -129,14 +144,15 @@
   }
 
   function writeCache(data) {
-    if (!data || !Array.isArray(data.items)) return;
+    const normalizedData = normalizeRenderableData(data);
+    if (!normalizedData) return;
 
     try {
       window.localStorage.setItem(
         config.cacheKey,
         JSON.stringify({
           fetchedAt: Date.now(),
-          data,
+          data: normalizedData,
         })
       );
     } catch {
@@ -605,14 +621,14 @@
     return listItem;
   }
 
-  function renderRecentCommits(data) {
-    const items = Array.isArray(data?.items) ? data.items.slice(0, config.maxItems) : [];
-    const owner = typeof data?.owner === "string" ? data.owner : "";
+  function renderRecentCommits(data, options = {}) {
+    const normalizedData = normalizeRenderableData(data);
+    const showLoadingMessage = options.showLoadingMessage === true;
+    const errorMessageText = typeof options.errorMessage === "string" ? options.errorMessage.trim() : "";
 
-    if (!items.length || !owner) return;
+    if (!normalizedData) return;
 
-    const validItems = items.filter((item) => item?.repo && item?.url && item?.message && item?.date);
-    if (!validItems.length) return;
+    const { items: validItems } = normalizedData;
 
     const fragment = document.createDocumentFragment();
 
@@ -630,6 +646,32 @@
     headingMeta.textContent = "(GitHub commits)";
     heading.append(headingMeta);
     section.append(heading);
+
+    if (errorMessageText) {
+      const errorMessage = document.createElement("p");
+      errorMessage.className = "recent-commits-error";
+
+      const errorIcon = document.createElement("span");
+      errorIcon.className = "recent-commits-error-icon";
+      errorIcon.setAttribute("aria-hidden", "true");
+      errorIcon.append(createAlertIcon());
+      errorMessage.append(errorIcon);
+      errorMessage.append(errorMessageText);
+      section.append(errorMessage);
+    }
+
+    if (showLoadingMessage) {
+      const loadingMessage = document.createElement("p");
+      loadingMessage.className = "recent-commits-loading";
+
+      const loadingIcon = document.createElement("span");
+      loadingIcon.className = "recent-commits-loading-icon";
+      loadingIcon.setAttribute("aria-hidden", "true");
+      loadingIcon.append(createSyncIcon());
+      loadingMessage.append(loadingIcon);
+      loadingMessage.append("Loading recent commits...");
+      section.append(loadingMessage);
+    }
 
     const list = document.createElement("ul");
     list.className = "recent-commits";
@@ -663,24 +705,40 @@
   }
 
   async function init() {
+    let staleCachedData = null;
+
     if (!config.root.querySelector("#recent-commits-block")) {
       renderRecentCommitsLoading();
     }
 
     const cached = readCache();
     if (cached?.data) {
-      renderRecentCommits(cached.data);
+      if (!cached.isFresh) {
+        staleCachedData = cached.data;
+      }
+      renderRecentCommits(cached.data, { showLoadingMessage: !cached.isFresh });
       if (cached.isFresh) return;
     }
 
     try {
       const data = await loadRecentCommits();
-      if (!data) return;
+      if (!data) {
+        if (staleCachedData) {
+          renderRecentCommits(staleCachedData);
+        }
+        return;
+      }
 
       writeCache(data);
       renderRecentCommits(data);
     } catch (error) {
       console.warn("recent-commits: failed to load recent commits", error);
+      if (staleCachedData) {
+        renderRecentCommits(staleCachedData, {
+          errorMessage: "Unable to load recent commits right now.",
+        });
+        return;
+      }
       renderRecentCommitsError("Unable to load recent commits right now.");
     }
   }
