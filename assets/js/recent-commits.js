@@ -458,6 +458,23 @@
     return svg;
   }
 
+  function createSyncIcon() {
+    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    svg.setAttribute("class", "octicon");
+    svg.setAttribute("width", "16");
+    svg.setAttribute("height", "16");
+    svg.setAttribute("viewBox", "0 0 16 16");
+    svg.setAttribute("aria-hidden", "true");
+
+    const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    path.setAttribute(
+      "d",
+      "M1.705 8.005a.75.75 0 0 1 .834-.656l1.5.2a.75.75 0 0 1-.178 1.49l-.243-.033a4.5 4.5 0 0 0 7.208 2.127.75.75 0 0 1 1.124.992A6 6 0 0 1 2.5 9.521l.01.074a.75.75 0 1 1-1.49.178l-.2-1.5a.75.75 0 0 1 .656-.834Zm12.59-.01a.75.75 0 0 1-.834.656l-1.5-.2a.75.75 0 1 1 .178-1.49l.244.032a4.5 4.5 0 0 0-7.21-2.126.75.75 0 0 1-1.123-.992A6 6 0 0 1 13.5 6.48l-.01-.074a.75.75 0 1 1 1.49-.178l.2 1.5a.75.75 0 0 1-.656.834Z"
+    );
+    svg.append(path);
+    return svg;
+  }
+
   function createSeparator() {
     const separator = document.createElement("span");
     separator.className = "recent-commit-sep";
@@ -467,6 +484,39 @@
 
   function createRepoUrl(repoName) {
     return `https://github.com/${encodeURIComponent(config.owner)}/${encodeURIComponent(repoName)}`;
+  }
+
+  function renderRecentCommitsLoading() {
+    const fragment = document.createDocumentFragment();
+
+    const divider = document.createElement("hr");
+    divider.className = "section-divider";
+    fragment.append(divider);
+
+    const section = document.createElement("section");
+    section.id = "recent-commits-block";
+
+    const heading = document.createElement("h2");
+    heading.append("Recent Activity ");
+    const headingMeta = document.createElement("span");
+    headingMeta.className = "section-heading-meta";
+    headingMeta.textContent = "(GitHub commits)";
+    heading.append(headingMeta);
+    section.append(heading);
+
+    const loadingMessage = document.createElement("p");
+    loadingMessage.className = "recent-commits-loading";
+
+    const loadingIcon = document.createElement("span");
+    loadingIcon.className = "recent-commits-loading-icon";
+    loadingIcon.setAttribute("aria-hidden", "true");
+    loadingIcon.append(createSyncIcon());
+    loadingMessage.append(loadingIcon);
+    loadingMessage.append("Loading recent commits...");
+    section.append(loadingMessage);
+
+    fragment.append(section);
+    config.root.replaceChildren(fragment);
   }
 
   function renderCommitItem(item) {
@@ -563,6 +613,8 @@
   }
 
   async function init() {
+    renderRecentCommitsLoading();
+
     const cached = readCache();
     if (cached?.data) {
       renderRecentCommits(cached.data);
