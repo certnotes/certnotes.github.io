@@ -22,19 +22,20 @@
       return null;
     }
 
-    return {
-      root: rootElement,
-      owner,
-      apiBaseUrl,
-      cacheKey: rootElement.dataset.cacheKey || `recent-commits:v3:${owner}`,
-      cacheTtlMs: 24 * 60 * 60 * 1000,
-      reposPerPage: 100,
-      maxRepoPages: 5,
-      commitsPerRepo: 5,
-      commitBatchSize: 5,
-      maxItems: 7,
-      dateFormatter: new Intl.DateTimeFormat("en-GB", {
-        day: "2-digit",
+      return {
+        root: rootElement,
+        owner,
+        apiBaseUrl,
+        cacheKey: rootElement.dataset.cacheKey || `recent-commits:v4:${owner}`,
+        cacheTtlMs: 24 * 60 * 60 * 1000,
+        staleCacheTtlMs: 7 * 24 * 60 * 60 * 1000,
+        reposPerPage: 30,
+        maxRepoPages: 2,
+        commitsPerRepo: 1,
+        commitBatchSize: 3,
+        maxItems: 7,
+        dateFormatter: new Intl.DateTimeFormat("en-GB", {
+          day: "2-digit",
         month: "2-digit",
         year: "numeric",
         timeZone: "UTC",
@@ -62,22 +63,27 @@
     return config.dateFormatter.format(date).replace(/\//g, "-");
   }
 
-  function readCache() {
-    try {
-      const raw = window.localStorage.getItem(config.cacheKey);
-      if (!raw) return null;
+    function readCache() {
+      try {
+        const raw = window.localStorage.getItem(config.cacheKey);
+        if (!raw) return null;
 
-      const cached = JSON.parse(raw);
-      const fetchedAt = Number(cached?.fetchedAt);
-      if (!Number.isFinite(fetchedAt)) return null;
-      if (Date.now() - fetchedAt > config.cacheTtlMs) return null;
-      if (!cached?.data || !Array.isArray(cached.data.items)) return null;
+        const cached = JSON.parse(raw);
+        const fetchedAt = Number(cached?.fetchedAt);
+        if (!Number.isFinite(fetchedAt)) return null;
+        if (!cached?.data || !Array.isArray(cached.data.items)) return null;
 
-      return cached.data;
-    } catch {
-      return null;
+        const ageMs = Date.now() - fetchedAt;
+        if (ageMs > config.staleCacheTtlMs) return null;
+
+        return {
+          data: cached.data,
+          isFresh: ageMs <= config.cacheTtlMs,
+        };
+      } catch {
+        return null;
+      }
     }
-  }
 
   function writeCache(data) {
     if (!data || !Array.isArray(data.items)) return;
@@ -131,6 +137,7 @@
         name: repo.name,
         defaultBranch: typeof repo.default_branch === "string" ? repo.default_branch : null,
         pushedAt: typeof repo.pushed_at === "string" ? repo.pushed_at : null,
+        pushedAtTime: Date.parse(repo.pushed_at),
         commitsApiUrl: apiUrl(
           `/repos/${encodeURIComponent(config.owner)}/${encodeURIComponent(repo.name)}/commits`
         ),
@@ -147,27 +154,22 @@
           : typeof commit?.commit?.committer?.date === "string"
             ? commit.commit.committer.date
             : null;
+      const timestamp = Date.parse(authoredAt);
       const url = typeof commit?.html_url === "string" ? commit.html_url : null;
 
-      if (!sha || !message || !authoredAt || !url) return null;
+      if (!sha || !message || !authoredAt || !url || !Number.isFinite(timestamp)) return null;
 
       return {
         repo: repo.name,
         url,
         date: authoredAt,
+        timestamp,
         message,
       };
     }
 
-    async function fetchReposUrl() {
-      const ownerProfile = await fetchJson(apiUrl(`/users/${encodeURIComponent(config.owner)}`));
-      return typeof ownerProfile?.repos_url === "string" && ownerProfile.repos_url
-        ? new URL(ownerProfile.repos_url)
-        : apiUrl(`/users/${encodeURIComponent(config.owner)}/repos`);
-    }
-
-    async function fetchRepoPage(reposUrl, page) {
-      const url = new URL(reposUrl);
+    async function fetchRepoPage(page) {
+      const url = apiUrl(`/users/${encodeURIComponent(config.owner)}/repos`);
       url.searchParams.set("sort", "pushed");
       url.searchParams.set("direction", "desc");
       url.searchParams.set("per_page", String(config.reposPerPage));
@@ -195,7 +197,6 @@
     }
 
     return {
-      fetchReposUrl,
       fetchRepoPage,
       fetchRepoCommits,
     };
@@ -206,7 +207,7 @@
     const seenUrls = new Set();
 
     function compareCommitDates(left, right) {
-      return new Date(right.date).getTime() - new Date(left.date).getTime();
+      return right.timestamp - left.timestamp;
     }
 
     function add(item) {
@@ -236,16 +237,17 @@
       return items.length >= config.maxItems;
     }
 
-    function canStopForRepoPage(repos) {
+    function canStopForRepoPage(repos, nextRepoIndex = repos.length) {
       if (!hasEnoughItems() || !Array.isArray(repos) || !repos.length) return false;
 
-      const oldestSelectedTime = new Date(items[items.length - 1]?.date).getTime();
-      const lastRepoPushedAt = repos[repos.length - 1]?.pushedAt;
-      const lastRepoPushedTime = new Date(lastRepoPushedAt).getTime();
+      const oldestSelectedTime = items[items.length - 1]?.timestamp;
+      const nextRepo = repos[nextRepoIndex];
+      const comparisonRepo = nextRepo || repos[repos.length - 1];
+      const comparisonTime = comparisonRepo?.pushedAtTime;
 
-      if (Number.isNaN(oldestSelectedTime) || Number.isNaN(lastRepoPushedTime)) return false;
+      if (!Number.isFinite(oldestSelectedTime) || !Number.isFinite(comparisonTime)) return false;
 
-      return oldestSelectedTime >= lastRepoPushedTime;
+      return oldestSelectedTime >= comparisonTime;
     }
 
     function toData() {
@@ -365,16 +367,16 @@
   async function loadRecentCommits() {
     const github = createGitHubClient();
     const accumulator = createRecentCommitAccumulator();
-    const reposUrl = await github.fetchReposUrl();
 
     for (let page = 1; page <= config.maxRepoPages; page += 1) {
-      const repos = await github.fetchRepoPage(reposUrl, page);
+      const repos = await github.fetchRepoPage(page);
       if (!repos.length) break;
 
       for (let index = 0; index < repos.length; index += config.commitBatchSize) {
         const repoBatch = repos.slice(index, index + config.commitBatchSize);
         const commitGroups = await Promise.all(repoBatch.map((repo) => github.fetchRepoCommits(repo)));
         accumulator.addMany(commitGroups);
+        if (accumulator.canStopForRepoPage(repos, index + config.commitBatchSize)) break;
       }
 
       if (accumulator.canStopForRepoPage(repos)) break;
@@ -385,10 +387,10 @@
   }
 
   async function init() {
-    const cachedData = readCache();
-    if (cachedData) {
-      renderRecentCommits(cachedData);
-      return;
+    const cached = readCache();
+    if (cached?.data) {
+      renderRecentCommits(cached.data);
+      if (cached.isFresh) return;
     }
 
     try {
