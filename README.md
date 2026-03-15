@@ -5,8 +5,6 @@
 ![Last Commit](https://img.shields.io/github/last-commit/certnotes/certnotes.github.io)
 ![Jekyll](https://img.shields.io/badge/Jekyll-4.x-cc0000?logo=jekyll)
 ![Ruby](https://img.shields.io/badge/Ruby-3.3-cc342d?logo=ruby)
-![Node](https://img.shields.io/badge/Node.js-24%2B-339933)
-
 Personal GitHub Pages site built with Jekyll and the remote `minima` theme.
 
 Live site: <https://certnotes.github.io/>
@@ -16,7 +14,7 @@ Live site: <https://certnotes.github.io/>
 This repository powers a small personal homepage that combines:
 
 - pinned GitHub repositories sourced through `jekyll-github-metadata`
-- recent GitHub commit activity from generated `_data/recent_commits.json`
+- recent GitHub commit activity fetched client-side from the GitHub public events API and cached in the browser for 24 hours
 - recent Substack posts from generated `_data/substack_posts.json`
 
 Most site customization lives in [`index.html`](./index.html), [`_includes/`](./_includes), and [`_sass/minima/custom-styles.scss`](./_sass/minima/custom-styles.scss).
@@ -26,16 +24,14 @@ Most site customization lives in [`index.html`](./index.html), [`_includes/`](./
 - GitHub Pages deployment with Jekyll
 - Remote `jekyll/minima` theme plus local include/style overrides
 - Config-driven pinned repository cards from [`_config.yml`](./_config.yml)
-- Generated data files for GitHub activity and Substack posts
-- Scheduled GitHub Actions automation for refresh and deployment
+- Generated data files for Substack posts
+- GitHub Actions automation for deployment and maintenance
 
 ## Repository Layout
 
 ```text
 .
 ├── .github/
-│   ├── scripts/
-│   │   └── build_recent_commits.mjs
 │   └── workflows/
 │       ├── delete-workflow-runs.yml
 │       └── jekyll-gh-pages.yml
@@ -43,9 +39,11 @@ Most site customization lives in [`index.html`](./index.html), [`_includes/`](./
 ├── _data/
 │   └── substack_posts.json
 ├── _includes/
-│   ├── recent_commits.html
 │   ├── repo_list.html
 │   └── substack_posts.html
+├── assets/
+│   └── js/
+│       └── recent-commits.js
 ├── _sass/
 │   └── minima/
 │       └── custom-styles.scss
@@ -63,7 +61,6 @@ Most site customization lives in [`index.html`](./index.html), [`_includes/`](./
 - Ruby 3.3
 - Bundler
 - Python 3 if you want to regenerate Substack data locally
-- Node.js 20 if you want to regenerate GitHub activity data locally
 
 ### Install dependencies
 
@@ -102,30 +99,7 @@ python3 scripts/fetch_substack_posts.py --feed-url https://example.substack.com/
 
 ### Recent GitHub commits
 
-Generate recent commit data into `_data/recent_commits.json`:
-
-```bash
-GITHUB_TOKEN=... GITHUB_OWNER=certnotes node .github/scripts/build_recent_commits.mjs
-```
-
-Supported environment variables:
-
-- `RECENT_COMMITS_SINCE_DAYS` default: `90`
-- `MAX_REPOS_TO_SCAN` default: `0` (no limit)
-- `PER_REPO` default: `10`
-- `MAX_ITEMS` default: `7`
-- `REPO_FETCH_CONCURRENCY` default: `6`
-- `GH_FETCH_MAX_RETRIES` default: `5`
-- `GH_FETCH_BASE_BACKOFF_MS` default: `1000`
-
-The generator skips stale repositories before requesting commits, keeps only the most recent items in memory, retries transient GitHub API failures with backoff, and rewrites the output file only when the comparable payload changes.
-
-Generated commit items contain:
-
-- `repo`
-- `url`
-- `date`
-- `message`
+The homepage fetches public GitHub activity for `certnotes` directly in the browser, extracts the 7 most recent commit entries from `PushEvent` payloads, and caches the normalized result in `localStorage` for 24 hours.
 
 ## Automation
 
@@ -137,16 +111,12 @@ Triggers:
 
 - push to `main`
 - manual dispatch
-- weekly schedule on Sunday at `00:00 UTC`
 
 Workflow behavior:
 
 1. Checks out the repository.
-2. Generates `_data/recent_commits.json`.
-3. Deploys on push and manual runs.
-4. On scheduled runs, deploys only if `_data/recent_commits.json` changed.
-5. Builds the site with Jekyll.
-6. Publishes the built site to GitHub Pages.
+2. Builds the site with Jekyll.
+3. Publishes the built site to GitHub Pages.
 
 Notes:
 
@@ -164,7 +134,6 @@ Notes:
 - `jekyll-github-metadata`
 - GitHub Pages
 - Python for Substack feed ingestion
-- Node.js for recent GitHub activity generation
 
 ## License
 

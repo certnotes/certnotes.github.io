@@ -8,10 +8,6 @@ on:
     paths-ignore:
       - '**/README.md'
 
-  # Runs once a week on Sunday at midnight UTC
-  schedule:
-    - cron: "0 0 * * 0"
-
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
 
@@ -31,8 +27,6 @@ jobs:
   build:
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    outputs:
-      should_deploy: ${{ steps.detect_changes.outputs.should_deploy }}
 
     steps:
       - name: Checkout
@@ -42,54 +36,17 @@ jobs:
           submodules: false
           lfs: false
 
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 24
-
-      - name: Generate recent commits data
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GITHUB_OWNER: ${{ github.repository_owner }}
-          RECENT_COMMITS_SINCE_DAYS: 90
-          MAX_REPOS_TO_SCAN: 20
-        run: node .github/scripts/build_recent_commits.mjs
-
-      - name: Detect whether we should deploy
-        id: detect_changes
-        run: |
-          set -euo pipefail
-
-          # For push/manual runs: always deploy.
-          if [ "${{ github.event_name }}" != "schedule" ]; then
-            echo "should_deploy=true" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-
-          # For scheduled runs: deploy if the generated data file changed (or is missing).
-          if [ -n "$(git status --porcelain -- _data/recent_commits.json)" ]; then
-            echo "_data/recent_commits.json changed; proceeding with build/deploy."
-            echo "should_deploy=true" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-
-          echo "No changes in _data/recent_commits.json; skipping build/deploy."
-          echo "should_deploy=false" >> "$GITHUB_OUTPUT"
-
       - name: Setup Pages
-        if: steps.detect_changes.outputs.should_deploy == 'true'
         uses: actions/configure-pages@v5
 
       # Cache Ruby gems + build with Jekyll directly (faster than reinstalling gems each run)
       - name: Setup Ruby
-        if: steps.detect_changes.outputs.should_deploy == 'true'
         uses: ruby/setup-ruby@v1
         with:
           ruby-version: "3.3"
           bundler-cache: true
 
       - name: Restore Jekyll cache
-        if: steps.detect_changes.outputs.should_deploy == 'true'
         uses: actions/cache@v4
         with:
           path: .jekyll-cache
@@ -98,17 +55,14 @@ jobs:
             ${{ runner.os }}-jekyll-
 
       - name: Build with Jekyll
-        if: steps.detect_changes.outputs.should_deploy == 'true'
         run: bundle exec jekyll build -d ./_site
 
       - name: Upload artifact
-        if: steps.detect_changes.outputs.should_deploy == 'true'
         uses: actions/upload-pages-artifact@v3
         with:
           path: ./_site
 
   deploy:
-    if: needs.build.outputs.should_deploy == 'true'
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
