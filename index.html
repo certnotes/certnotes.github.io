@@ -9,6 +9,8 @@ layout: home
   id="recent-commits-root"
   data-owner="{{ site.github.owner_name | default: site.github.owner.login }}"
 >
+  <template id="octicon-sync-template">{% octicon sync %}</template>
+  <template id="octicon-alert-template">{% octicon alert %}</template>
   <div id="recent-commits-loading-shell" style="display:none">
     <hr class="section-divider" />
     <section id="recent-commits-block">
@@ -17,11 +19,7 @@ layout: home
       </h2>
       <p class="recent-commits-loading">
         <span class="recent-commits-loading-icon" aria-hidden="true">
-          <svg class="octicon" width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
-            <path
-              d="M1.705 8.005a.75.75 0 0 1 .834-.656l1.5.2a.75.75 0 0 1-.178 1.49l-.243-.033a4.5 4.5 0 0 0 7.208 2.127.75.75 0 0 1 1.124.992A6 6 0 0 1 2.5 9.521l.01.074a.75.75 0 1 1-1.49.178l-.2-1.5a.75.75 0 0 1 .656-.834Zm12.59-.01a.75.75 0 0 1-.834.656l-1.5-.2a.75.75 0 1 1 .178-1.49l.244.032a4.5 4.5 0 0 0-7.21-2.126.75.75 0 0 1-1.123-.992A6 6 0 0 1 13.5 6.48l-.01-.074a.75.75 0 1 1 1.49-.178l.2 1.5a.75.75 0 0 1-.656.834Z"
-            ></path>
-          </svg>
+          {% octicon sync %}
         </span>
         Loading recent commits...
       </p>

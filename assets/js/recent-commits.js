@@ -474,38 +474,17 @@
     return svg;
   }
 
-  function createSyncIcon() {
-    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-    svg.setAttribute("class", "octicon");
-    svg.setAttribute("width", "16");
-    svg.setAttribute("height", "16");
-    svg.setAttribute("viewBox", "0 0 16 16");
-    svg.setAttribute("aria-hidden", "true");
+  function cloneOcticonTemplate(name) {
+    const template = document.getElementById(`octicon-${name}-template`);
+    return template?.content?.firstElementChild?.cloneNode(true) ?? document.createElement("span");
+  }
 
-    const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
-    path.setAttribute(
-      "d",
-      "M1.705 8.005a.75.75 0 0 1 .834-.656l1.5.2a.75.75 0 0 1-.178 1.49l-.243-.033a4.5 4.5 0 0 0 7.208 2.127.75.75 0 0 1 1.124.992A6 6 0 0 1 2.5 9.521l.01.074a.75.75 0 1 1-1.49.178l-.2-1.5a.75.75 0 0 1 .656-.834Zm12.59-.01a.75.75 0 0 1-.834.656l-1.5-.2a.75.75 0 1 1 .178-1.49l.244.032a4.5 4.5 0 0 0-7.21-2.126.75.75 0 0 1-1.123-.992A6 6 0 0 1 13.5 6.48l-.01-.074a.75.75 0 1 1 1.49-.178l.2 1.5a.75.75 0 0 1-.656.834Z"
-    );
-    svg.append(path);
-    return svg;
+  function createSyncIcon() {
+    return cloneOcticonTemplate("sync");
   }
 
   function createAlertIcon() {
-    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-    svg.setAttribute("class", "octicon");
-    svg.setAttribute("width", "16");
-    svg.setAttribute("height", "16");
-    svg.setAttribute("viewBox", "0 0 16 16");
-    svg.setAttribute("aria-hidden", "true");
-
-    const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
-    path.setAttribute(
-      "d",
-      "M6.457 1.047c.659-1.234 2.427-1.234 3.086 0l5.583 10.46A1.75 1.75 0 0 1 13.583 14H2.417a1.75 1.75 0 0 1-1.543-2.493Zm1.323.707a.25.25 0 0 0-.44 0L1.756 12.214a.25.25 0 0 0 .22.357h11.048a.25.25 0 0 0 .22-.357ZM8 5a.75.75 0 0 1 .75.75v2.5a.75.75 0 0 1-1.5 0v-2.5A.75.75 0 0 1 8 5Zm0 6a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z"
-    );
-    svg.append(path);
-    return svg;
+    return cloneOcticonTemplate("alert");
   }
 
   function createSeparator() {
