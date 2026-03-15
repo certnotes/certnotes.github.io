@@ -7,7 +7,7 @@ layout: home
 {%- include repo_list.html -%}
 <div
   id="recent-commits-root"
-  data-owner="certnotes"
+  data-owner="{{ site.github.owner_name | default: site.github.owner.login }}"
 ></div>
 <script src="/assets/js/recent-commits.js" defer></script>
 {%- include substack_posts.html -%}

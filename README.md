@@ -99,7 +99,7 @@ python3 scripts/fetch_substack_posts.py --feed-url https://example.substack.com/
 
 ### Recent GitHub commits
 
-The homepage renders recent GitHub activity entirely client-side. [`assets/js/recent-commits.js`](./assets/js/recent-commits.js) fetches public events for `certnotes` in the browser, extracts the 7 most recent commit entries from `PushEvent` payloads, and caches the normalized result in `localStorage` for 24 hours.
+The homepage renders recent GitHub activity entirely client-side. [`assets/js/recent-commits.js`](./assets/js/recent-commits.js) resolves the repository owner from the page metadata when available, falls back to the `username.github.io` hostname pattern when needed, loads that owner’s repositories through the GitHub API, fetches recent commits from those repos, merges the results into the 7 most recent commit entries, and caches the normalized result in `localStorage` for 24 hours.
 
 ## Automation
 

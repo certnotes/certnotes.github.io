@@ -1,48 +1,76 @@
 (() => {
   const root = document.getElementById("recent-commits-root");
-  const owner = root?.dataset.owner || "certnotes";
-  const cacheKey = root?.dataset.cacheKey || `recent-commits:${owner}`;
-  const cacheTtlMs = 24 * 60 * 60 * 1000;
-  const eventsUrl =
-    root?.dataset.sourceUrl ||
-    `https://api.github.com/users/${encodeURIComponent(owner)}/events/public`;
-  const eventsPerPage = 100;
-  const maxEventPages = 3;
-  const maxItems = 7;
-
   if (!root) return;
 
-  const dateFormatter = new Intl.DateTimeFormat("en-GB", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-    timeZone: "UTC",
-  });
+  const config = createConfig(root);
+  if (!config) return;
 
-  let eventsBaseUrl;
-  try {
-    eventsBaseUrl = new URL(eventsUrl);
-  } catch {
-    console.warn("recent-commits: invalid source URL", eventsUrl);
-    return;
+  function createConfig(rootElement) {
+    const githubApiBaseUrl = rootElement.dataset.sourceUrl || "https://api.github.com";
+    let apiBaseUrl;
+
+    try {
+      apiBaseUrl = new URL(githubApiBaseUrl);
+    } catch {
+      console.warn("recent-commits: invalid source URL", githubApiBaseUrl);
+      return null;
+    }
+
+    const owner = resolveOwner(rootElement);
+    if (!owner) {
+      console.warn("recent-commits: could not resolve repo owner");
+      return null;
+    }
+
+    return {
+      root: rootElement,
+      owner,
+      apiBaseUrl,
+      cacheKey: rootElement.dataset.cacheKey || `recent-commits:v3:${owner}`,
+      cacheTtlMs: 24 * 60 * 60 * 1000,
+      reposPerPage: 100,
+      maxRepoPages: 5,
+      commitsPerRepo: 5,
+      commitBatchSize: 5,
+      maxItems: 7,
+      dateFormatter: new Intl.DateTimeFormat("en-GB", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+        timeZone: "UTC",
+      }),
+    };
+  }
+
+  function resolveOwner(rootElement) {
+    const configuredOwner = rootElement.dataset.owner?.trim();
+    if (configuredOwner) return configuredOwner;
+
+    return inferOwnerFromHostname();
+  }
+
+  function inferOwnerFromHostname() {
+    const hostname = window.location.hostname.trim().toLowerCase();
+    const githubPagesMatch = hostname.match(/^([a-z0-9-]+)\.github\.io$/i);
+    return githubPagesMatch?.[1] || "";
   }
 
   function formatDate(value) {
     const date = new Date(value);
     if (Number.isNaN(date.getTime())) return "";
 
-    return dateFormatter.format(date).replace(/\//g, "-");
+    return config.dateFormatter.format(date).replace(/\//g, "-");
   }
 
-  function readCachedRecentCommits() {
+  function readCache() {
     try {
-      const raw = window.localStorage.getItem(cacheKey);
+      const raw = window.localStorage.getItem(config.cacheKey);
       if (!raw) return null;
 
       const cached = JSON.parse(raw);
       const fetchedAt = Number(cached?.fetchedAt);
       if (!Number.isFinite(fetchedAt)) return null;
-      if (Date.now() - fetchedAt > cacheTtlMs) return null;
+      if (Date.now() - fetchedAt > config.cacheTtlMs) return null;
       if (!cached?.data || !Array.isArray(cached.data.items)) return null;
 
       return cached.data;
@@ -51,12 +79,12 @@
     }
   }
 
-  function writeCachedRecentCommits(data) {
+  function writeCache(data) {
     if (!data || !Array.isArray(data.items)) return;
 
     try {
       window.localStorage.setItem(
-        cacheKey,
+        config.cacheKey,
         JSON.stringify({
           fetchedAt: Date.now(),
           data,
@@ -67,76 +95,168 @@
     }
   }
 
-  function collectRecentCommits(events, items, seenUrls) {
-    for (const event of events) {
-      if (event?.type !== "PushEvent") continue;
-
-      const repoFullName = typeof event?.repo?.name === "string" ? event.repo.name : "";
-      if (!repoFullName.startsWith(`${owner}/`)) continue;
-
-      const repoName = repoFullName.split("/")[1] ?? repoFullName;
-      const eventDate = event?.created_at ?? null;
-      const commits = Array.isArray(event?.payload?.commits) ? event.payload.commits : [];
-
-      for (const commit of commits) {
-        const sha = typeof commit?.sha === "string" ? commit.sha : "";
-        const message = typeof commit?.message === "string" ? commit.message.split("\n")[0].trim() : "";
-        const url = sha ? `https://github.com/${repoFullName}/commit/${encodeURIComponent(sha)}` : null;
-
-        if (!url || !eventDate || !message || seenUrls.has(url)) continue;
-
-        seenUrls.add(url);
-        items.push({
-          repo: repoName,
-          url,
-          date: eventDate,
-          message,
-        });
-
-        if (items.length >= maxItems) {
-          return true;
-        }
-      }
+  function createGitHubClient() {
+    function apiUrl(pathname) {
+      return new URL(pathname, config.apiBaseUrl);
     }
 
-    return false;
-  }
+    async function fetchJson(url) {
+      const response = await fetch(url.toString(), {
+        headers: {
+          Accept: "application/vnd.github+json",
+        },
+      });
 
-  function normalizeRecentCommits(eventPages) {
-    if (!Array.isArray(eventPages)) return null;
-
-    const items = [];
-    const seenUrls = new Set();
-
-    for (const events of eventPages) {
-      if (!Array.isArray(events)) continue;
-      if (collectRecentCommits(events, items, seenUrls)) break;
-    }
-
-    return items.length
-      ? {
-          owner,
-          items,
-        }
-      : null;
-  }
-
-  function fetchEventPage(page) {
-    const url = new URL(eventsBaseUrl);
-    url.searchParams.set("per_page", String(eventsPerPage));
-    url.searchParams.set("page", String(page));
-
-    return fetch(url.toString(), {
-      headers: {
-        Accept: "application/vnd.github+json",
-      },
-    }).then((response) => {
       if (!response.ok) {
         throw new Error(`Failed to load recent commits: ${response.status}`);
       }
 
       return response.json();
-    });
+    }
+
+    function isOwnedRepo(repo) {
+      return (
+        repo &&
+        typeof repo.name === "string" &&
+        repo.owner &&
+        typeof repo.owner.login === "string" &&
+        repo.owner.login.toLowerCase() === config.owner.toLowerCase()
+      );
+    }
+
+    function normalizeRepo(repo) {
+      if (!isOwnedRepo(repo)) return null;
+
+      return {
+        name: repo.name,
+        defaultBranch: typeof repo.default_branch === "string" ? repo.default_branch : null,
+        pushedAt: typeof repo.pushed_at === "string" ? repo.pushed_at : null,
+        commitsApiUrl: apiUrl(
+          `/repos/${encodeURIComponent(config.owner)}/${encodeURIComponent(repo.name)}/commits`
+        ),
+      };
+    }
+
+    function normalizeCommit(repo, commit) {
+      const sha = typeof commit?.sha === "string" ? commit.sha : "";
+      const message =
+        typeof commit?.commit?.message === "string" ? commit.commit.message.split("\n")[0].trim() : "";
+      const authoredAt =
+        typeof commit?.commit?.author?.date === "string"
+          ? commit.commit.author.date
+          : typeof commit?.commit?.committer?.date === "string"
+            ? commit.commit.committer.date
+            : null;
+      const url = typeof commit?.html_url === "string" ? commit.html_url : null;
+
+      if (!sha || !message || !authoredAt || !url) return null;
+
+      return {
+        repo: repo.name,
+        url,
+        date: authoredAt,
+        message,
+      };
+    }
+
+    async function fetchReposUrl() {
+      const ownerProfile = await fetchJson(apiUrl(`/users/${encodeURIComponent(config.owner)}`));
+      return typeof ownerProfile?.repos_url === "string" && ownerProfile.repos_url
+        ? new URL(ownerProfile.repos_url)
+        : apiUrl(`/users/${encodeURIComponent(config.owner)}/repos`);
+    }
+
+    async function fetchRepoPage(reposUrl, page) {
+      const url = new URL(reposUrl);
+      url.searchParams.set("sort", "pushed");
+      url.searchParams.set("direction", "desc");
+      url.searchParams.set("per_page", String(config.reposPerPage));
+      url.searchParams.set("page", String(page));
+
+      const repos = await fetchJson(url);
+      if (!Array.isArray(repos) || !repos.length) return [];
+
+      return repos.map(normalizeRepo).filter(Boolean);
+    }
+
+    async function fetchRepoCommits(repo) {
+      if (!repo?.commitsApiUrl) return [];
+
+      const url = new URL(repo.commitsApiUrl);
+      url.searchParams.set("per_page", String(config.commitsPerRepo));
+      if (repo.defaultBranch) {
+        url.searchParams.set("sha", repo.defaultBranch);
+      }
+
+      const commits = await fetchJson(url);
+      if (!Array.isArray(commits)) return [];
+
+      return commits.map((commit) => normalizeCommit(repo, commit)).filter(Boolean);
+    }
+
+    return {
+      fetchReposUrl,
+      fetchRepoPage,
+      fetchRepoCommits,
+    };
+  }
+
+  function createRecentCommitAccumulator() {
+    const items = [];
+    const seenUrls = new Set();
+
+    function compareCommitDates(left, right) {
+      return new Date(right.date).getTime() - new Date(left.date).getTime();
+    }
+
+    function add(item) {
+      if (!item?.url || seenUrls.has(item.url)) return;
+
+      seenUrls.add(item.url);
+      items.push(item);
+      items.sort(compareCommitDates);
+
+      if (items.length > config.maxItems) {
+        const removed = items.pop();
+        if (removed?.url) {
+          seenUrls.delete(removed.url);
+        }
+      }
+    }
+
+    function addMany(commitGroups) {
+      for (const group of commitGroups) {
+        for (const item of group) {
+          add(item);
+        }
+      }
+    }
+
+    function hasEnoughItems() {
+      return items.length >= config.maxItems;
+    }
+
+    function canStopForRepoPage(repos) {
+      if (!hasEnoughItems() || !Array.isArray(repos) || !repos.length) return false;
+
+      const oldestSelectedTime = new Date(items[items.length - 1]?.date).getTime();
+      const lastRepoPushedAt = repos[repos.length - 1]?.pushedAt;
+      const lastRepoPushedTime = new Date(lastRepoPushedAt).getTime();
+
+      if (Number.isNaN(oldestSelectedTime) || Number.isNaN(lastRepoPushedTime)) return false;
+
+      return oldestSelectedTime >= lastRepoPushedTime;
+    }
+
+    function toData() {
+      return items.length ? { owner: config.owner, items: items.slice() } : null;
+    }
+
+    return {
+      addMany,
+      canStopForRepoPage,
+      toData,
+    };
   }
 
   function createCommitIcon() {
@@ -154,8 +274,55 @@
     return svg;
   }
 
+  function createSeparator() {
+    const separator = document.createElement("span");
+    separator.className = "recent-commit-sep";
+    separator.textContent = "·";
+    return separator;
+  }
+
+  function createRepoUrl(repoName) {
+    return `https://github.com/${encodeURIComponent(config.owner)}/${encodeURIComponent(repoName)}`;
+  }
+
+  function renderCommitItem(item) {
+    const listItem = document.createElement("li");
+
+    const icon = document.createElement("span");
+    icon.className = "recent-commit-icon";
+    icon.setAttribute("aria-hidden", "true");
+    icon.append(createCommitIcon());
+    listItem.append(icon);
+
+    const text = document.createElement("span");
+    text.className = "recent-commit-text";
+
+    const repoLink = document.createElement("a");
+    repoLink.href = createRepoUrl(item.repo);
+    repoLink.textContent = item.repo;
+    text.append(repoLink);
+
+    text.append(createSeparator());
+
+    const messageLink = document.createElement("a");
+    messageLink.className = "recent-commit-message";
+    messageLink.href = item.url;
+    messageLink.textContent = item.message;
+    text.append(messageLink);
+
+    text.append(createSeparator());
+
+    const date = document.createElement("span");
+    date.className = "recent-commit-date";
+    date.textContent = formatDate(item.date);
+    text.append(date);
+
+    listItem.append(text);
+    return listItem;
+  }
+
   function renderRecentCommits(data) {
-    const items = Array.isArray(data?.items) ? data.items.slice(0, maxItems) : [];
+    const items = Array.isArray(data?.items) ? data.items.slice(0, config.maxItems) : [];
     const owner = typeof data?.owner === "string" ? data.owner : "";
 
     if (!items.length || !owner) return;
@@ -184,84 +351,54 @@
     list.className = "recent-commits";
 
     for (const item of validItems) {
-      const repoUrl = `https://github.com/${encodeURIComponent(owner)}/${encodeURIComponent(item.repo)}`;
-
-      const listItem = document.createElement("li");
-
-      const icon = document.createElement("span");
-      icon.className = "recent-commit-icon";
-      icon.setAttribute("aria-hidden", "true");
-      icon.append(createCommitIcon());
-      listItem.append(icon);
-
-      const text = document.createElement("span");
-      text.className = "recent-commit-text";
-
-      const repoLink = document.createElement("a");
-      repoLink.href = repoUrl;
-      repoLink.textContent = item.repo;
-      text.append(repoLink);
-
-      const repoSep = document.createElement("span");
-      repoSep.className = "recent-commit-sep";
-      repoSep.textContent = "·";
-      text.append(repoSep);
-
-      const messageLink = document.createElement("a");
-      messageLink.className = "recent-commit-message";
-      messageLink.href = item.url;
-      messageLink.textContent = item.message;
-      text.append(messageLink);
-
-      const dateSep = document.createElement("span");
-      dateSep.className = "recent-commit-sep";
-      dateSep.textContent = "·";
-      text.append(dateSep);
-
-      const date = document.createElement("span");
-      date.className = "recent-commit-date";
-      date.textContent = formatDate(item.date);
-      text.append(date);
-
-      listItem.append(text);
-      list.append(listItem);
+      list.append(renderCommitItem(item));
     }
 
     section.append(list);
     fragment.append(section);
 
-    root.replaceChildren(fragment);
+    config.root.replaceChildren(fragment);
   }
 
   async function loadRecentCommits() {
-    const eventPages = [];
+    const github = createGitHubClient();
+    const accumulator = createRecentCommitAccumulator();
+    const reposUrl = await github.fetchReposUrl();
 
-    for (let page = 1; page <= maxEventPages; page += 1) {
-      const events = await fetchEventPage(page);
-      eventPages.push(events);
+    for (let page = 1; page <= config.maxRepoPages; page += 1) {
+      const repos = await github.fetchRepoPage(reposUrl, page);
+      if (!repos.length) break;
 
-      const data = normalizeRecentCommits(eventPages);
-      if (data?.items?.length >= maxItems) {
-        return data;
+      for (let index = 0; index < repos.length; index += config.commitBatchSize) {
+        const repoBatch = repos.slice(index, index + config.commitBatchSize);
+        const commitGroups = await Promise.all(repoBatch.map((repo) => github.fetchRepoCommits(repo)));
+        accumulator.addMany(commitGroups);
       }
+
+      if (accumulator.canStopForRepoPage(repos)) break;
+      if (repos.length < config.reposPerPage) break;
     }
 
-    return normalizeRecentCommits(eventPages);
+    return accumulator.toData();
   }
 
-  const cachedData = readCachedRecentCommits();
-  if (cachedData) {
-    renderRecentCommits(cachedData);
-    return;
-  }
+  async function init() {
+    const cachedData = readCache();
+    if (cachedData) {
+      renderRecentCommits(cachedData);
+      return;
+    }
 
-  loadRecentCommits()
-    .then((data) => {
+    try {
+      const data = await loadRecentCommits();
       if (!data) return;
-      writeCachedRecentCommits(data);
+
+      writeCache(data);
       renderRecentCommits(data);
-    })
-    .catch((error) => {
+    } catch (error) {
       console.warn("recent-commits: failed to load recent commits", error);
-    });
+    }
+  }
+
+  init();
 })();
