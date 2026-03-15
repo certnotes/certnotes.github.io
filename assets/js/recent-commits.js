@@ -475,6 +475,23 @@
     return svg;
   }
 
+  function createAlertIcon() {
+    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    svg.setAttribute("class", "octicon");
+    svg.setAttribute("width", "16");
+    svg.setAttribute("height", "16");
+    svg.setAttribute("viewBox", "0 0 16 16");
+    svg.setAttribute("aria-hidden", "true");
+
+    const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    path.setAttribute(
+      "d",
+      "M6.457 1.047c.659-1.234 2.427-1.234 3.086 0l5.583 10.46A1.75 1.75 0 0 1 13.583 14H2.417a1.75 1.75 0 0 1-1.543-2.493Zm1.323.707a.25.25 0 0 0-.44 0L1.756 12.214a.25.25 0 0 0 .22.357h11.048a.25.25 0 0 0 .22-.357ZM8 5a.75.75 0 0 1 .75.75v2.5a.75.75 0 0 1-1.5 0v-2.5A.75.75 0 0 1 8 5Zm0 6a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z"
+    );
+    svg.append(path);
+    return svg;
+  }
+
   function createSeparator() {
     const separator = document.createElement("span");
     separator.className = "recent-commit-sep";
@@ -514,6 +531,39 @@
     loadingMessage.append(loadingIcon);
     loadingMessage.append("Loading recent commits...");
     section.append(loadingMessage);
+
+    fragment.append(section);
+    config.root.replaceChildren(fragment);
+  }
+
+  function renderRecentCommitsError(message) {
+    const fragment = document.createDocumentFragment();
+
+    const divider = document.createElement("hr");
+    divider.className = "section-divider";
+    fragment.append(divider);
+
+    const section = document.createElement("section");
+    section.id = "recent-commits-block";
+
+    const heading = document.createElement("h2");
+    heading.append("Recent Activity ");
+    const headingMeta = document.createElement("span");
+    headingMeta.className = "section-heading-meta";
+    headingMeta.textContent = "(GitHub commits)";
+    heading.append(headingMeta);
+    section.append(heading);
+
+    const errorMessage = document.createElement("p");
+    errorMessage.className = "recent-commits-error";
+
+    const errorIcon = document.createElement("span");
+    errorIcon.className = "recent-commits-error-icon";
+    errorIcon.setAttribute("aria-hidden", "true");
+    errorIcon.append(createAlertIcon());
+    errorMessage.append(errorIcon);
+    errorMessage.append(message);
+    section.append(errorMessage);
 
     fragment.append(section);
     config.root.replaceChildren(fragment);
@@ -613,7 +663,9 @@
   }
 
   async function init() {
-    renderRecentCommitsLoading();
+    if (!config.root.querySelector("#recent-commits-block")) {
+      renderRecentCommitsLoading();
+    }
 
     const cached = readCache();
     if (cached?.data) {
@@ -629,6 +681,7 @@
       renderRecentCommits(data);
     } catch (error) {
       console.warn("recent-commits: failed to load recent commits", error);
+      renderRecentCommitsError("Unable to load recent commits right now.");
     }
   }
 

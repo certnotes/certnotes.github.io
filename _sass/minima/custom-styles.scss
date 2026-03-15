@@ -325,21 +325,19 @@ blockquote.callout {
   line-height: 1.4;
 }
 
-.recent-commits-loading {
+.recent-commits-loading,
+.recent-commits-error {
   display: inline-flex;
   align-items: center;
   gap: 0.45rem;
 }
 
-.recent-commits-loading-icon {
+.recent-commits-loading-icon,
+.recent-commits-error-icon {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   line-height: 1;
-}
-
-.recent-commits-loading-icon .octicon {
-  animation: recent-commits-spin 2s linear infinite;
 }
 
 .recent-commit-date,
@@ -347,20 +345,4 @@ blockquote.callout {
 .recent-commit-sep,
 .recent-commit-text a {
   line-height: inherit;
-}
-
-@keyframes recent-commits-spin {
-  from {
-    transform: rotate(0deg);
-  }
-
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .recent-commits-loading-icon .octicon {
-    animation: none;
-  }
 }
