@@ -17,7 +17,7 @@ This repository powers a small personal homepage that combines:
 - recent GitHub commit activity fetched client-side from the GitHub public events API and cached in the browser for 24 hours
 - recent Substack posts from generated `_data/substack_posts.json`
 
-Most site customization lives in [`index.html`](./index.html), [`_includes/`](./_includes), and [`_sass/minima/custom-styles.scss`](./_sass/minima/custom-styles.scss).
+Most site customization lives in [`index.html`](./index.html), [`_includes/`](./_includes), [`assets/js/recent-commits.js`](./assets/js/recent-commits.js), and [`_sass/minima/custom-styles.scss`](./_sass/minima/custom-styles.scss).
 
 ## Features
 
@@ -99,7 +99,7 @@ python3 scripts/fetch_substack_posts.py --feed-url https://example.substack.com/
 
 ### Recent GitHub commits
 
-The homepage fetches public GitHub activity for `certnotes` directly in the browser, extracts the 7 most recent commit entries from `PushEvent` payloads, and caches the normalized result in `localStorage` for 24 hours.
+The homepage renders recent GitHub activity entirely client-side. [`assets/js/recent-commits.js`](./assets/js/recent-commits.js) fetches public events for `certnotes` in the browser, extracts the 7 most recent commit entries from `PushEvent` payloads, and caches the normalized result in `localStorage` for 24 hours.
 
 ## Automation
 
