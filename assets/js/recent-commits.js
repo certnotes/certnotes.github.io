@@ -6,6 +6,7 @@
   if (!config) return;
 
   function createConfig(rootElement) {
+    const maxItems = 7;
     const githubApiBaseUrl = rootElement.dataset.sourceUrl || "https://api.github.com";
     let apiBaseUrl;
 
@@ -22,25 +23,67 @@
       return null;
     }
 
-      return {
-        root: rootElement,
-        owner,
-        apiBaseUrl,
-        cacheKey: rootElement.dataset.cacheKey || `recent-commits:v4:${owner}`,
-        cacheTtlMs: 24 * 60 * 60 * 1000,
-        staleCacheTtlMs: 7 * 24 * 60 * 60 * 1000,
-        reposPerPage: 30,
-        maxRepoPages: 2,
-        commitsPerRepo: 1,
-        commitBatchSize: 3,
-        maxItems: 7,
-        dateFormatter: new Intl.DateTimeFormat("en-GB", {
-          day: "2-digit",
+    return {
+      root: rootElement,
+      owner,
+      apiBaseUrl,
+      cacheKey: rootElement.dataset.cacheKey || `recent-commits:v7:${owner}`,
+      cacheTtlMs: 24 * 60 * 60 * 1000,
+      staleCacheTtlMs: 7 * 24 * 60 * 60 * 1000,
+      reposPerPage: 30,
+      maxRepoPages: resolveMaxRepoPages(rootElement),
+      commitsPerRepo: 1,
+      commitBatchSize: resolveCommitBatchSize(rootElement),
+      maxItems,
+      dateFormatter: new Intl.DateTimeFormat("en-GB", {
+        day: "2-digit",
         month: "2-digit",
         year: "numeric",
         timeZone: "UTC",
       }),
     };
+  }
+
+  function parsePositiveInt(value, fallbackValue) {
+    const parsed = Number.parseInt(value || "", 10);
+    return Number.isInteger(parsed) && parsed > 0 ? parsed : fallbackValue;
+  }
+
+  function resolveNetworkProfile() {
+    const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+    const effectiveType = typeof connection?.effectiveType === "string" ? connection.effectiveType : "";
+    const saveData = connection?.saveData === true;
+
+    if (saveData || effectiveType === "slow-2g" || effectiveType === "2g") {
+      return "conservative";
+    }
+
+    if (effectiveType === "3g") {
+      return "balanced";
+    }
+
+    return "aggressive";
+  }
+
+  function resolveCommitBatchSize(rootElement) {
+    const configuredValue = parsePositiveInt(rootElement.dataset.commitBatchSize, 0);
+    if (configuredValue) return configuredValue;
+
+    switch (resolveNetworkProfile()) {
+      case "conservative":
+        return 2;
+      case "balanced":
+        return 3;
+      default:
+        return 5;
+    }
+  }
+
+  function resolveMaxRepoPages(rootElement) {
+    const configuredValue = parsePositiveInt(rootElement.dataset.maxRepoPages, 0);
+    if (configuredValue) return configuredValue;
+
+    return resolveNetworkProfile() === "conservative" ? 1 : 2;
   }
 
   function resolveOwner(rootElement) {
@@ -63,27 +106,27 @@
     return config.dateFormatter.format(date).replace(/\//g, "-");
   }
 
-    function readCache() {
-      try {
-        const raw = window.localStorage.getItem(config.cacheKey);
-        if (!raw) return null;
+  function readCache() {
+    try {
+      const raw = window.localStorage.getItem(config.cacheKey);
+      if (!raw) return null;
 
-        const cached = JSON.parse(raw);
-        const fetchedAt = Number(cached?.fetchedAt);
-        if (!Number.isFinite(fetchedAt)) return null;
-        if (!cached?.data || !Array.isArray(cached.data.items)) return null;
+      const cached = JSON.parse(raw);
+      const fetchedAt = Number(cached?.fetchedAt);
+      if (!Number.isFinite(fetchedAt)) return null;
+      if (!cached?.data || !Array.isArray(cached.data.items)) return null;
 
-        const ageMs = Date.now() - fetchedAt;
-        if (ageMs > config.staleCacheTtlMs) return null;
+      const ageMs = Date.now() - fetchedAt;
+      if (ageMs > config.staleCacheTtlMs) return null;
 
-        return {
-          data: cached.data,
-          isFresh: ageMs <= config.cacheTtlMs,
-        };
-      } catch {
-        return null;
-      }
+      return {
+        data: cached.data,
+        isFresh: ageMs <= config.cacheTtlMs,
+      };
+    } catch {
+      return null;
     }
+  }
 
   function writeCache(data) {
     if (!data || !Array.isArray(data.items)) return;
@@ -133,11 +176,19 @@
     function normalizeRepo(repo) {
       if (!isOwnedRepo(repo)) return null;
 
+      const pushedAt = typeof repo.pushed_at === "string" ? repo.pushed_at : null;
+      const pushedAtTime = Date.parse(pushedAt);
+      const isArchived = repo.archived === true;
+      const isDisabled = repo.disabled === true;
+      const isEmpty = repo.size === 0;
+      if (!pushedAt || !Number.isFinite(pushedAtTime) || isArchived || isDisabled || isEmpty) return null;
+
       return {
         name: repo.name,
         defaultBranch: typeof repo.default_branch === "string" ? repo.default_branch : null,
-        pushedAt: typeof repo.pushed_at === "string" ? repo.pushed_at : null,
-        pushedAtTime: Date.parse(repo.pushed_at),
+        pushedAt,
+        pushedAtTime,
+        fetchedCommitPages: 0,
         commitsApiUrl: apiUrl(
           `/repos/${encodeURIComponent(config.owner)}/${encodeURIComponent(repo.name)}/commits`
         ),
@@ -148,21 +199,21 @@
       const sha = typeof commit?.sha === "string" ? commit.sha : "";
       const message =
         typeof commit?.commit?.message === "string" ? commit.commit.message.split("\n")[0].trim() : "";
-      const authoredAt =
-        typeof commit?.commit?.author?.date === "string"
-          ? commit.commit.author.date
-          : typeof commit?.commit?.committer?.date === "string"
-            ? commit.commit.committer.date
+      const committedAt =
+        typeof commit?.commit?.committer?.date === "string"
+          ? commit.commit.committer.date
+          : typeof commit?.commit?.author?.date === "string"
+            ? commit.commit.author.date
             : null;
-      const timestamp = Date.parse(authoredAt);
+      const timestamp = Date.parse(committedAt);
       const url = typeof commit?.html_url === "string" ? commit.html_url : null;
 
-      if (!sha || !message || !authoredAt || !url || !Number.isFinite(timestamp)) return null;
+      if (!sha || !message || !committedAt || !url || !Number.isFinite(timestamp)) return null;
 
       return {
         repo: repo.name,
         url,
-        date: authoredAt,
+        date: committedAt,
         timestamp,
         message,
       };
@@ -186,14 +237,19 @@
 
       const url = new URL(repo.commitsApiUrl);
       url.searchParams.set("per_page", String(config.commitsPerRepo));
+      url.searchParams.set("page", String(repo.fetchedCommitPages + 1));
       if (repo.defaultBranch) {
         url.searchParams.set("sha", repo.defaultBranch);
       }
 
       const commits = await fetchJson(url);
       if (!Array.isArray(commits)) return [];
+      repo.fetchedCommitPages += 1;
 
-      return commits.map((commit) => normalizeCommit(repo, commit)).filter(Boolean);
+      return commits
+        .map((commit) => normalizeCommit(repo, commit))
+        .filter(Boolean)
+        .sort((left, right) => right.timestamp - left.timestamp);
     }
 
     return {
@@ -205,17 +261,33 @@
   function createRecentCommitAccumulator() {
     const items = [];
     const seenUrls = new Set();
+    const repoStates = new Map();
+    let cutoffTime = null;
+
+    function createRepoState(repo) {
+      return {
+        repo,
+        commits: [],
+        exhausted: false,
+      };
+    }
 
     function compareCommitDates(left, right) {
       return right.timestamp - left.timestamp;
     }
 
-    function add(item) {
-      if (!item?.url || seenUrls.has(item.url)) return;
+    function updateCutoffTime() {
+      cutoffTime = items.length >= config.maxItems ? items[items.length - 1]?.timestamp ?? null : null;
+    }
 
+    function insertItem(item) {
+      if (!item?.url || seenUrls.has(item.url)) return false;
+
+      let insertIndex = items.findIndex((current) => item.timestamp > current.timestamp);
+      if (insertIndex === -1) insertIndex = items.length;
+
+      items.splice(insertIndex, 0, item);
       seenUrls.add(item.url);
-      items.push(item);
-      items.sort(compareCommitDates);
 
       if (items.length > config.maxItems) {
         const removed = items.pop();
@@ -223,13 +295,47 @@
           seenUrls.delete(removed.url);
         }
       }
+
+      updateCutoffTime();
+      return true;
     }
 
-    function addMany(commitGroups) {
-      for (const group of commitGroups) {
-        for (const item of group) {
-          add(item);
-        }
+    function ensureRepoState(repo) {
+      if (!repo?.name) return null;
+
+      const existingState = repoStates.get(repo.name);
+      if (existingState) return existingState;
+
+      const state = createRepoState(repo);
+      repoStates.set(repo.name, state);
+      return state;
+    }
+
+    function mergeRepoCommits(repoState, commits) {
+      if (!commits.length) {
+        repoState.exhausted = true;
+        return;
+      }
+
+      repoState.commits.push(...commits);
+      repoState.commits.sort(compareCommitDates);
+
+      for (const item of commits) {
+        insertItem(item);
+      }
+
+      if (commits.length < config.commitsPerRepo) {
+        repoState.exhausted = true;
+      }
+    }
+
+    function addMany(repos, commitGroups) {
+      for (let index = 0; index < commitGroups.length; index += 1) {
+        const repoState = ensureRepoState(repos[index]);
+        if (!repoState) continue;
+
+        const commits = Array.isArray(commitGroups[index]) ? commitGroups[index] : [];
+        mergeRepoCommits(repoState, commits);
       }
     }
 
@@ -237,10 +343,14 @@
       return items.length >= config.maxItems;
     }
 
+    function getCutoffTime() {
+      return cutoffTime;
+    }
+
     function canStopForRepoPage(repos, nextRepoIndex = repos.length) {
       if (!hasEnoughItems() || !Array.isArray(repos) || !repos.length) return false;
 
-      const oldestSelectedTime = items[items.length - 1]?.timestamp;
+      const oldestSelectedTime = getCutoffTime();
       const nextRepo = repos[nextRepoIndex];
       const comparisonRepo = nextRepo || repos[repos.length - 1];
       const comparisonTime = comparisonRepo?.pushedAtTime;
@@ -250,6 +360,17 @@
       return oldestSelectedTime >= comparisonTime;
     }
 
+    function getReposNeedingMoreCommits() {
+      return Array.from(repoStates.values()).filter((state) => {
+        if (state.exhausted) return false;
+        if (!hasEnoughItems()) return true;
+        if (state.exhausted || !state.commits.length) return false;
+
+        const oldestKnownCommit = state.commits[state.commits.length - 1];
+        return Number.isFinite(oldestKnownCommit?.timestamp) && oldestKnownCommit.timestamp > cutoffTime;
+      });
+    }
+
     function toData() {
       return items.length ? { owner: config.owner, items: items.slice() } : null;
     }
@@ -257,8 +378,67 @@
     return {
       addMany,
       canStopForRepoPage,
+      getCutoffTime,
+      getReposNeedingMoreCommits,
+      hasEnoughItems,
       toData,
     };
+  }
+
+  function canRepoBeatCutoff(repo, cutoffTime) {
+    if (!repo || !Number.isFinite(repo.pushedAtTime)) return false;
+    if (!Number.isFinite(cutoffTime)) return true;
+    return repo.pushedAtTime > cutoffTime;
+  }
+
+  function selectCandidateRepos(repos, startIndex, cutoffTime) {
+    return repos
+      .slice(startIndex, startIndex + config.commitBatchSize)
+      .filter((repo) => canRepoBeatCutoff(repo, cutoffTime));
+  }
+
+  function shouldStopRepoBatchScan(accumulator, repos, startIndex, cutoffTime) {
+    return (
+      accumulator.hasEnoughItems() &&
+      repos[startIndex] &&
+      !canRepoBeatCutoff(repos[startIndex], cutoffTime)
+    );
+  }
+
+  function shouldStopRepoPageScan(accumulator, repos) {
+    return accumulator.canStopForRepoPage(repos) || repos.length < config.reposPerPage;
+  }
+
+  async function fetchCommitGroups(github, repos) {
+    return Promise.all(repos.map((repo) => github.fetchRepoCommits(repo)));
+  }
+
+  async function scanRepoPage(github, accumulator, repos) {
+    for (let index = 0; index < repos.length; index += config.commitBatchSize) {
+      const cutoffTime = accumulator.getCutoffTime();
+      const repoBatch = selectCandidateRepos(repos, index, cutoffTime);
+
+      if (!repoBatch.length && accumulator.hasEnoughItems()) break;
+      if (shouldStopRepoBatchScan(accumulator, repos, index, cutoffTime)) break;
+
+      const commitGroups = await fetchCommitGroups(github, repoBatch);
+      accumulator.addMany(repoBatch, commitGroups);
+
+      if (accumulator.canStopForRepoPage(repos, index + config.commitBatchSize)) break;
+    }
+  }
+
+  async function loadAdditionalCommits(github, accumulator) {
+    while (true) {
+      const reposNeedingMoreCommits = accumulator.getReposNeedingMoreCommits();
+      if (!reposNeedingMoreCommits.length) break;
+
+      const repos = reposNeedingMoreCommits.map((state) => state.repo);
+      const commitGroups = await fetchCommitGroups(github, repos);
+      accumulator.addMany(repos, commitGroups);
+
+      if (commitGroups.every((group) => !group.length)) break;
+    }
   }
 
   function createCommitIcon() {
@@ -372,16 +552,12 @@
       const repos = await github.fetchRepoPage(page);
       if (!repos.length) break;
 
-      for (let index = 0; index < repos.length; index += config.commitBatchSize) {
-        const repoBatch = repos.slice(index, index + config.commitBatchSize);
-        const commitGroups = await Promise.all(repoBatch.map((repo) => github.fetchRepoCommits(repo)));
-        accumulator.addMany(commitGroups);
-        if (accumulator.canStopForRepoPage(repos, index + config.commitBatchSize)) break;
-      }
+      await scanRepoPage(github, accumulator, repos);
 
-      if (accumulator.canStopForRepoPage(repos)) break;
-      if (repos.length < config.reposPerPage) break;
+      if (shouldStopRepoPageScan(accumulator, repos)) break;
     }
+
+    await loadAdditionalCommits(github, accumulator);
 
     return accumulator.toData();
   }
