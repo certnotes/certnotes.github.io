@@ -262,13 +262,15 @@
   function createCommitIcon() {
     const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
     svg.setAttribute("class", "octicon");
+    svg.setAttribute("width", "16");
+    svg.setAttribute("height", "16");
     svg.setAttribute("viewBox", "0 0 16 16");
     svg.setAttribute("aria-hidden", "true");
 
     const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
     path.setAttribute(
       "d",
-      "M6.5 1.75a1.75 1.75 0 1 1 3.362.694l3.122 1.56a1.75 1.75 0 1 1-.67 1.341L9.19 6.905a1.75 1.75 0 1 1 0 2.19l3.123 1.56a1.75 1.75 0 1 1-.531 1.006L8.49 10.015a1.75 1.75 0 1 1-1.98-2.48V5.75a1.75 1.75 0 0 1 0-3.5Zm1.5 1a.75.75 0 1 0 0 1.5.75.75 0 0 0 0-1.5Zm0 9a.75.75 0 1 0 0 1.5.75.75 0 0 0 0-1.5Zm5-5a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Z"
+      "M11.93 8.5a4.002 4.002 0 0 1-7.86 0H.75a.75.75 0 0 1 0-1.5h3.32a4.002 4.002 0 0 1 7.86 0h3.32a.75.75 0 0 1 0 1.5Zm-1.43-.75a2.5 2.5 0 1 0-5 0 2.5 2.5 0 0 0 5 0Z"
     );
     svg.append(path);
     return svg;
