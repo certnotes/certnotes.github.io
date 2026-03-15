@@ -162,7 +162,11 @@
 
   function createGitHubClient() {
     function apiUrl(pathname) {
-      return new URL(pathname, config.apiBaseUrl);
+      const normalizedPath = String(pathname || "").replace(/^\/+/, "");
+      const baseUrl = new URL(config.apiBaseUrl);
+      const basePath = baseUrl.pathname.endsWith("/") ? baseUrl.pathname : `${baseUrl.pathname}/`;
+      baseUrl.pathname = `${basePath}${normalizedPath}`;
+      return baseUrl;
     }
 
     async function fetchJson(url) {
